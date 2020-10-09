@@ -10,7 +10,7 @@ namespace Hangman
         static List<char> m_CorrectLetters = new List<char>();
         static List<char> m_ShownLetters = new List<char>();
         static List<char> m_incorrectEnteredLetters = new List<char>();
-        static List<string> m_Words = new List<string> { "Hello", "World", "Potato", "Carrots", "Pork", "Cow", "Animal" };
+        static List<string> m_Words = new List<string> { "HELLO", "WORLD", "POTATO", "CARROTS", "PORK", "COW", "ANIMAL" };
         static string m_Word;
         static bool m_Won = false;
         static char m_PlayAgain = 'n';
@@ -29,14 +29,17 @@ namespace Hangman
                 {
                     Console.Write(m_ShownLetters[i] + "\t");
                 }
-                Console.WriteLine("... and these letters incorrectly: ");
+                Console.WriteLine("\n... and these letters incorrectly: ");
                 for (int i = 0; i < m_incorrectEnteredLetters.Count; i++)
                 {
                     Console.Write(m_incorrectEnteredLetters[i] + "\t");
                 }
 
-                Console.WriteLine("What letter is your guess? ");
-                char guess = Console.ReadKey().KeyChar;
+                Console.WriteLine("\nWhat letter is your guess? ");
+                
+                string guessWord = Console.ReadKey().KeyChar.ToString();
+                char[] guessArr = guessWord.ToUpper().ToCharArray();
+                char guess = guessArr[0];
                 if (CheckGuess(guess))
                 {
                     m_ShownLetters.Add(guess);
