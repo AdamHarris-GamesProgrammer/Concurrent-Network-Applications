@@ -40,21 +40,8 @@ namespace Hangman
                 string guessWord = Console.ReadKey().KeyChar.ToString();
                 char[] guessArr = guessWord.ToUpper().ToCharArray();
                 char guess = guessArr[0];
-                if (CheckGuess(guess))
-                {
-                    m_ShownLetters.Add(guess);
-                }
-                else
-                {
-                    if (!m_incorrectEnteredLetters.Contains(guess))
-                    {
-                        m_incorrectEnteredLetters.Add(guess);
-                    }
-                    else
-                    {
-                        Console.WriteLine("You have already entered {0} before", guess);
-                    }
-                }
+
+                CheckGuess(guess);
 
             } while (m_Lives > 0 || m_Won);
         }
@@ -70,10 +57,25 @@ namespace Hangman
             Console.WriteLine("===============");
         }
 
-        static bool CheckGuess(char guess)
+        static void CheckGuess(char guess)
         {
-            if (m_CorrectLetters.Contains(guess)) return true;
-            else return false;
+            foreach(char c in m_Word.ToCharArray())
+            {
+                if (guess == c)
+                {
+                    m_ShownLetters.Add(guess);
+                }
+                else
+                {
+                    if (!m_incorrectEnteredLetters.Contains(guess))
+                    {
+                        m_incorrectEnteredLetters.Add(guess);
+                    }
+                }
+            }
+
+
+
         }
 
         static void GenerateWord()
