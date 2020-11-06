@@ -50,7 +50,7 @@ namespace Client
 
                 ProcessServerResponse();
 
-                if (userInput == "end") break;
+                if (userInput == "4") break;
             }
 
             tcpClient.Close();
