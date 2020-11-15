@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Windows;
 
 namespace Client
 {
     class Program
     {
+        [STAThread]
         static void Main(string[] args)
         {
             Client client = new Client();

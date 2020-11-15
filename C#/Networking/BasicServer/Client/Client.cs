@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Data;
 using System.IO;
 using System.Net.Sockets;
 using System.Text;
@@ -30,7 +28,7 @@ namespace Client
 
                 return true;
             }
-            catch(Exception e)
+            catch (Exception e)
             {
                 Console.WriteLine("Exception: " + e.Message);
                 return false;
@@ -43,7 +41,7 @@ namespace Client
 
             ProcessServerResponse();
 
-            while(((userInput = Console.ReadLine()) != null))
+            while (((userInput = Console.ReadLine()) != null))
             {
                 writer.WriteLine(userInput);
                 writer.Flush();

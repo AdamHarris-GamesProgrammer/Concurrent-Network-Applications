@@ -6,60 +6,77 @@ using System.Net;
 using System.Reflection;
 using System.IO;
 using System.Text.Unicode;
+using System.Collections.Concurrent;
+using System.Threading;
 
 namespace BasicServer
 {
     class Server
     {
+        private TcpListener mTcpListener;
+
+        private ConcurrentBag<Client> mClients;
+
         public Server(string ipAddress, int port)
         {
             IPAddress ip = IPAddress.Parse(ipAddress);
-            tcpListener = new TcpListener(ip, port);
+            mTcpListener = new TcpListener(ip, port);
         }
 
         public void Start()
         {
-            tcpListener.Start();
+            mClients = new ConcurrentBag<Client>();
 
-            Console.WriteLine("Awaiting Connection");
+            mTcpListener.Start();
 
-            Socket socket = tcpListener.AcceptSocket();
+            while (mClients.Count != 4)
+            {
+                Console.WriteLine("Awaiting Connection");
 
-            Console.WriteLine("Accepted Connection");
+                Socket socket = mTcpListener.AcceptSocket();
 
-            ClientMethod(socket);
+                Client client = new Client(socket);
+
+                mClients.Add(client);
+
+                Console.WriteLine("Accepted Connection");
+
+                Thread thread = new Thread(() => { ClientMethod(client); });
+
+                thread.Start();
+
+                //ClientMethod(socket);
+            }
+
         }
 
         public void Stop()
         {
-            tcpListener.Stop();
+            mTcpListener.Stop();
             Console.WriteLine("Closed Connection");
         }
 
-        private void ClientMethod(Socket socket)
+        private void ClientMethod(Client client)
         {
             string recievedMessage;
 
-            NetworkStream stream = new NetworkStream(socket);
-            StreamReader reader = new StreamReader(stream, Encoding.UTF8);
-            StreamWriter writer = new StreamWriter(stream, Encoding.UTF8);
 
-            writer.WriteLine("Commands 1: Joke. 2: Weather Report. 3: Sarcasm. 4: Exit");
-            writer.Flush();
+            client.Send("Commands 1: Joke. 2: Weather Report. 3: Sarcasm. 4: Exit");
 
-            while ((recievedMessage = reader.ReadLine()) != null) {
+            BroadcastAll("Hello All");
+
+            while ((recievedMessage = client.Read()) != null) {
                 string serverMessage = GetReturnMessage(recievedMessage);
 
-                writer.WriteLine(serverMessage);
-                writer.Flush();
-
-                //writer.WriteLine("Commands: 1: Joke 2: Weather Report 3: Sarcasm 4: Exit");
+                client.Send(serverMessage);
 
                 if (recievedMessage == "4") break;
             }
 
             Console.WriteLine("Closing Connection");
-            socket.Close();
+            client.Close();
+
+            mClients.TryTake(out client);
         }
 
         private string GetReturnMessage(string code)
@@ -84,6 +101,14 @@ namespace BasicServer
                 return "Invalid Message.";
             }
 
+        }
+
+        public void BroadcastAll(string message)
+        {
+            foreach(Client client in mClients)
+            {
+                client.SendImmediate(message);
+            }
         }
 
         public string GetJoke()
@@ -113,6 +138,6 @@ namespace BasicServer
             return jokes[rand.Next(0, jokes.Length)];
         }
 
-        private TcpListener tcpListener;
+
     }
 }
