@@ -39,13 +39,13 @@ namespace BasicServer
 
                 mClients.Add(client);
 
+
+
                 Console.WriteLine("Accepted Connection");
 
                 Thread thread = new Thread(() => { ClientMethod(client); });
 
                 thread.Start();
-
-                //ClientMethod(socket);
             }
 
         }
@@ -61,16 +61,27 @@ namespace BasicServer
             string recievedMessage;
 
 
-            client.Send("Commands 1: Joke. 2: Weather Report. 3: Sarcasm. 4: Exit");
+            //client.Send("Commands 1: Joke. 2: Weather Report. 3: Sarcasm. 4: Exit");
 
-            BroadcastAll("Hello All");
+           // client.Send("Boop");
 
-            while ((recievedMessage = client.Read()) != null) {
-                string serverMessage = GetReturnMessage(recievedMessage);
 
-                client.Send(serverMessage);
+            while ((recievedMessage = client.Read()) != null)
+            {
+                // string serverMessage = GetReturnMessage(recievedMessage);
 
-                if (recievedMessage == "4") break;
+                //client.Send()
+
+                //client.Send(serverMessage);
+                //Console.WriteLine("Recieved Message");
+
+                foreach(Client cli in mClients)
+                {
+                    if (cli != client)
+                    {
+                        cli.Send(recievedMessage);
+                    }
+                }
             }
 
             Console.WriteLine("Closing Connection");
@@ -79,29 +90,6 @@ namespace BasicServer
             mClients.TryTake(out client);
         }
 
-        private string GetReturnMessage(string code)
-        {
-            if(code == "1")
-            {
-                return GetJoke();
-            }
-            else if(code == "2")
-            {
-                return GetWeather();
-            }
-            else if(code == "3")
-            {
-                return GetSarcastic();
-            }else if(code == "4")
-            {
-                return "Goodbye";
-            }
-            else
-            {
-                return "Invalid Message.";
-            }
-
-        }
 
         public void BroadcastAll(string message)
         {
@@ -109,33 +97,6 @@ namespace BasicServer
             {
                 client.SendImmediate(message);
             }
-        }
-
-        public string GetJoke()
-        {
-            string[] jokes = { "A man walks into a bar... He says \"Ow that bloody hurt\"", "You.", "How much money does a pirate pay for corn...? A buccaneer.", "Barista: How do you take your coffee...? Me: Very, very seriously." };
-
-            Random rand = new Random();
-
-            return jokes[rand.Next(0, jokes.Length)];
-        }
-
-        public string GetWeather()
-        {
-            string[] jokes = { "I'm not smart enough for that", "Try looking outside genius", "100& Chance of rain, accurate 0.001% percent of the time" };
-
-            Random rand = new Random();
-
-            return jokes[rand.Next(0, jokes.Length)];
-        }
-
-        public string GetSarcastic()
-        {
-            string[] jokes = { "It's lovely to meet you, is what I would say if I cared", "Honestly I have no clue what to put here", "Making responses is hard", "Boom." };
-
-            Random rand = new Random();
-
-            return jokes[rand.Next(0, jokes.Length)];
         }
 
 

@@ -12,6 +12,7 @@ namespace UserClient
         private NetworkStream stream;
         private StreamWriter writer;
         private StreamReader reader;
+        private ClientForm clientForm;
 
         public Client()
         {
@@ -40,13 +41,15 @@ namespace UserClient
 
         public void Run()
         {
-            ClientForm form = new ClientForm(this);
+            clientForm = new ClientForm(this);
 
-            Thread thread = new Thread(() => ProcessServerResponse());
+            Thread thread = new Thread(ProcessServerResponse);
 
             thread.Start();
 
-            form.ShowDialog();
+            
+
+            clientForm.ShowDialog();
 
             tcpClient.Close();
         }
@@ -55,12 +58,15 @@ namespace UserClient
         {
             writer.WriteLine(message);
             writer.Flush();
+            clientForm.UpdateChatWindow(message);
         }
 
         private void ProcessServerResponse()
         {
-            Console.WriteLine("Server says: " + reader.ReadLine());
-            Console.WriteLine();
+            while (true)
+            {
+                clientForm.UpdateChatWindow(reader.ReadLine());
+            }
         }
 
     }

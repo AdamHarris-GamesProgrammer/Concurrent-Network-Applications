@@ -35,14 +35,16 @@ namespace UserClient
             MessageWindow.Dispatcher.Invoke(() =>
             {
                 MessageWindow.Text += message + Environment.NewLine;
-                //MessageWindow.ScrollToEnd();
+                MessageWindow.ScrollToEnd();
             });
         }
 
         private void SubmitButton_Click(object sender, RoutedEventArgs e)
         {
-            
+            if (InputField.Text == "") return;
+
             mClient.SendMessage(InputField.Text);
+            InputField.Text = "";
         }
     }
 }
