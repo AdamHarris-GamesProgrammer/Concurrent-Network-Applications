@@ -60,21 +60,8 @@ namespace BasicServer
         {
             string recievedMessage;
 
-
-            //client.Send("Commands 1: Joke. 2: Weather Report. 3: Sarcasm. 4: Exit");
-
-           // client.Send("Boop");
-
-
             while ((recievedMessage = client.Read()) != null)
             {
-                // string serverMessage = GetReturnMessage(recievedMessage);
-
-                //client.Send()
-
-                //client.Send(serverMessage);
-                //Console.WriteLine("Recieved Message");
-
                 foreach(Client cli in mClients)
                 {
                     if (cli != client)
@@ -88,17 +75,11 @@ namespace BasicServer
             client.Close();
 
             mClients.TryTake(out client);
-        }
 
-
-        public void BroadcastAll(string message)
-        {
-            foreach(Client client in mClients)
+            if(mClients.Count == 0)
             {
-                client.SendImmediate(message);
+                Stop();
             }
         }
-
-
     }
 }

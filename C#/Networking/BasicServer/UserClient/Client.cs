@@ -14,12 +14,19 @@ namespace UserClient
         private StreamReader reader;
         private ClientForm clientForm;
 
+        private string nickname = "Username";
+
+        bool isConnected = false;
+
         public Client()
         {
             tcpClient = new TcpClient();
         }
 
-
+        public void SetNickname(string name)
+        {
+            nickname = name;
+        }
 
         public bool Connect(string ipAddress, int port)
         {
@@ -29,6 +36,8 @@ namespace UserClient
                 stream = tcpClient.GetStream();
                 writer = new StreamWriter(stream, Encoding.UTF8);
                 reader = new StreamReader(stream, Encoding.UTF8);
+
+                isConnected = true;
 
                 return true;
             }
@@ -51,19 +60,33 @@ namespace UserClient
 
             clientForm.ShowDialog();
 
+            DisconnectFromServer();
+        }
+
+        public void DisconnectFromServer()
+        {
             tcpClient.Close();
+            reader.Close();
+            writer.Close();
+            isConnected = false;
         }
 
         public void SendMessage(string message)
         {
-            writer.WriteLine(message);
+            writer.WriteLine(nickname + ": " + message);
             writer.Flush();
-            clientForm.UpdateChatWindow(message);
+            clientForm.UpdateChatWindow("Me: " + message);
+        }
+
+        public void DisconnectedMessage()
+        {
+            writer.WriteLine(nickname + " has left the chat");
+            writer.Flush();
         }
 
         private void ProcessServerResponse()
         {
-            while (true)
+            while (isConnected)
             {
                 clientForm.UpdateChatWindow(reader.ReadLine());
             }

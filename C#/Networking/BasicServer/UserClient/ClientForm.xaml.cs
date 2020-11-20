@@ -35,7 +35,6 @@ namespace UserClient
             MessageWindow.Dispatcher.Invoke(() =>
             {
                 MessageWindow.Text += message + Environment.NewLine;
-                MessageWindow.ScrollToEnd();
             });
         }
 
@@ -45,6 +44,17 @@ namespace UserClient
 
             mClient.SendMessage(InputField.Text);
             InputField.Text = "";
+        }
+
+        private void DisconnectButton_Click(object sender, RoutedEventArgs e)
+        {
+            mClient.DisconnectedMessage();
+            mClient.DisconnectFromServer();
+        }
+
+        private void UsernameButton_Click(object sender, RoutedEventArgs e)
+        {
+            
         }
     }
 }
