@@ -54,7 +54,8 @@ namespace UserClient
 
         private void UsernameButton_Click(object sender, RoutedEventArgs e)
         {
-            
+            ChangeNickname nicknameWindow = new ChangeNickname(mClient);
+            nicknameWindow.ShowDialog();
         }
     }
 }

@@ -28,6 +28,11 @@ namespace UserClient
             nickname = name;
         }
 
+        public string GetNickname()
+        {
+            return nickname;
+        }
+
         public bool Connect(string ipAddress, int port)
         {
             try
