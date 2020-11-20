@@ -70,9 +70,11 @@ namespace UserClient
 
         public void DisconnectFromServer()
         {
+            writer.Dispose();
+            reader.Dispose();
+            //reader.Close();
+            //writer.Close();
             tcpClient.Close();
-            reader.Close();
-            writer.Close();
             isConnected = false;
         }
 
@@ -80,7 +82,7 @@ namespace UserClient
         {
             writer.WriteLine(nickname + ": " + message);
             writer.Flush();
-            clientForm.UpdateChatWindow("Me: " + message);
+            clientForm.UpdateChatWindow("Me: " + message, System.Windows.HorizontalAlignment.Right);
         }
 
         public void DisconnectedMessage()
@@ -93,7 +95,7 @@ namespace UserClient
         {
             while (isConnected)
             {
-                clientForm.UpdateChatWindow(reader.ReadLine());
+                clientForm.UpdateChatWindow(reader.ReadLine(), System.Windows.HorizontalAlignment.Left);
             }
         }
 

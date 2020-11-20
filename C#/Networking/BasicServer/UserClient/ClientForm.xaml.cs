@@ -30,11 +30,30 @@ namespace UserClient
             mClient = client;
         }
 
-        public void UpdateChatWindow(string message)
+        public void UpdateChatWindow(string message, HorizontalAlignment align)
         {
-            MessageWindow.Dispatcher.Invoke(() =>
+            //MessageWindow.Dispatcher.Invoke(() =>
+            //{
+            //    MessageWindow.Text += message + Environment.NewLine;
+            //});
+            MessageWnd.Dispatcher.Invoke(() =>
             {
-                MessageWindow.Text += message + Environment.NewLine;
+                var item = new ListViewItem();
+
+                if (align == HorizontalAlignment.Right)
+                {
+                    item.Background = Brushes.AliceBlue;
+                }
+                else
+                {
+                    item.Background = Brushes.LightGray;
+                }
+
+                item.HorizontalAlignment = align;
+ 
+                item.Content = message;
+
+                MessageWnd.Items.Add(item);
             });
         }
 
