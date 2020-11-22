@@ -4,15 +4,22 @@ namespace Packets
 {
     public enum PacketType
     {
+        Empty,
         ChatMessage,
         PrivateMessage,
-        ClientName
+        ClientName,
+        Nickname
     }
 
     [Serializable]
     public class Packet
     {
         public PacketType packetType { get; set; }
+
+        public Packet()
+        {
+            packetType = PacketType.Empty;
+        }
     }
 
     [Serializable]
@@ -26,4 +33,17 @@ namespace Packets
             packetType = PacketType.ChatMessage;
         }
     }
+
+    [Serializable]
+    public class NicknamePacket : Packet
+    {
+        public string nickname;
+
+        public NicknamePacket(string name)
+        {
+            nickname = name;
+            packetType = PacketType.Nickname;
+        }
+    }
+
 }

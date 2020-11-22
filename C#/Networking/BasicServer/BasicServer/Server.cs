@@ -81,6 +81,18 @@ namespace BasicServer
                         break;
                     default:
                         break;
+                    case PacketType.Empty:
+                        break;
+                    case PacketType.Nickname:
+                        NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
+                        foreach (Client cli in mClients)
+                        {
+                            if (cli != client)
+                            {
+                                cli.Send(nicknamePacket);
+                            }
+                        }
+                        break;
 
                 }
 

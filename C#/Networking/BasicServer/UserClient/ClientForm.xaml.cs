@@ -24,13 +24,18 @@ namespace UserClient
     {
         private Client mClient;
 
+        private string lastNicknameRecieved = "";
+
         public ClientForm(Client client)
         {
             InitializeComponent();
             mClient = client;
+
+            ChangeNickname nicknameWindow = new ChangeNickname(mClient);
+            nicknameWindow.ShowDialog();
         }
 
-        public void UpdateChatWindow(string message, HorizontalAlignment align)
+        public void SendMessageToWindow(string message, HorizontalAlignment align)
         {
             MessageWnd.Dispatcher.Invoke(() =>
             {
@@ -53,12 +58,32 @@ namespace UserClient
             });
         }
 
+        public void SendNicknameToWindow(string nickname)
+        {
+            if (lastNicknameRecieved == nickname) return;
+
+            MessageWnd.Dispatcher.Invoke(() =>
+            {
+                var item = new ListViewItem();
+
+                item.HorizontalAlignment = HorizontalAlignment.Left;
+                item.FontStyle = FontStyles.Italic;
+                item.Content = nickname;
+
+                MessageWnd.Items.Add(item);
+            });
+
+            lastNicknameRecieved = nickname;
+        }
+
         private void SubmitButton_Click(object sender, RoutedEventArgs e)
         {
             if (InputField.Text == "") return;
 
             mClient.SendMessage(InputField.Text);
             InputField.Text = "";
+
+            lastNicknameRecieved = "";
         }
 
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)

@@ -7,12 +7,13 @@
         mc:Ignorable="d"
         Title="Set Nickname" Height="200" Width="400">
 
-    <Border Padding="2">
+    <Border Padding="5">
         <Grid>
             <Grid.RowDefinitions>
-                <RowDefinition Height="*"/>
-                <RowDefinition Height="*"/>
                 <RowDefinition Height="2*"/>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="2*"/>
+                <RowDefinition Height="*"/>
             </Grid.RowDefinitions>
 
             <Grid.ColumnDefinitions>
@@ -21,8 +22,8 @@
                 <ColumnDefinition Width="8*"/>
             </Grid.ColumnDefinitions>
 
-            <Label Content="Current Nickname: " Grid.Column="0"/>
-            <Label Grid.Column="2" x:Name="currentName"/>
+            <Label VerticalAlignment="Center" Content="Current Nickname: " Grid.Column="0"/>
+            <Label VerticalAlignment="Center" Grid.Column="2" x:Name="currentName"/>
 
             <Label VerticalAlignment="Center" Content= "New Nickname: " Grid.Row="1" Grid.Column="0"/>
             <TextBox VerticalAlignment="Center" x:Name="nicknameInput" Grid.Row="1" Grid.Column="2"/>

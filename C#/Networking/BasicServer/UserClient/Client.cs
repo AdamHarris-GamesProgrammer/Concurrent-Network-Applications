@@ -82,15 +82,22 @@ namespace UserClient
 
         public void SendMessage(string message)
         {
-            //writer.WriteLine(nickname + ": " + message);
-            //writer.Flush();
-            clientForm.UpdateChatWindow("Me: " + message, System.Windows.HorizontalAlignment.Right);
 
-            ChatMessagePacket chatMsg = new ChatMessagePacket(message);
+            clientForm.SendMessageToWindow("Me: " + message, System.Windows.HorizontalAlignment.Right);
 
-            MemoryStream memStream = new MemoryStream();
-            formatter.Serialize(memStream, chatMsg);
-            byte[] buffer = memStream.GetBuffer();
+
+            NicknamePacket nicknamePacket = new NicknamePacket(nickname);
+            MemoryStream nicknameStream = new MemoryStream();
+            formatter.Serialize(nicknameStream, nicknamePacket);
+            byte[] nicknameBuffer = nicknameStream.GetBuffer();
+            writer.Write(nicknameBuffer.Length);
+            writer.Write(nicknameBuffer);
+            writer.Flush();
+
+            ChatMessagePacket messagePacket = new ChatMessagePacket(message);
+            MemoryStream msgStream = new MemoryStream();
+            formatter.Serialize(msgStream, messagePacket);
+            byte[] buffer = msgStream.GetBuffer();
             writer.Write(buffer.Length);
             writer.Write(buffer);
             writer.Flush();
@@ -98,39 +105,45 @@ namespace UserClient
 
         public void DisconnectedMessage()
         {
-            //writer.WriteLine(nickname + " has left the chat");
-            //writer.Flush();
+            SendMessage(nickname + " has disconnected");
         }
 
         private void ProcessServerResponse()
         {
             int numberOfBytes;
 
-            while ((numberOfBytes = reader.ReadInt32()) != 0)
+            while (isConnected)
             {
-                byte[] buffer = reader.ReadBytes(numberOfBytes);
-
-                MemoryStream stream = new MemoryStream(buffer);
-
-                Packet recievedMessage = new Packet();
-
-                recievedMessage = formatter.Deserialize(stream) as Packet;
-
-                switch (recievedMessage.packetType)
+                while ((numberOfBytes = reader.ReadInt32()) != 0)
                 {
-                    case PacketType.ChatMessage:
-                        ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        clientForm.UpdateChatWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
-                        break;
-                    case PacketType.PrivateMessage:
-                        break;
-                    case PacketType.ClientName:
-                        break;
-                    default:
-                        break;
+                    byte[] buffer = reader.ReadBytes(numberOfBytes);
 
+                    MemoryStream stream = new MemoryStream(buffer);
+
+                    Packet recievedMessage = formatter.Deserialize(stream) as Packet;
+
+                    switch (recievedMessage.packetType)
+                    {
+                        case PacketType.ChatMessage:
+                            ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
+                            clientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
+                            break;
+                        case PacketType.PrivateMessage:
+                            break;
+                        case PacketType.ClientName:
+                            break;
+                        case PacketType.Empty:
+                            break;
+                        case PacketType.Nickname:
+                            NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
+                            clientForm.SendNicknameToWindow(nicknamePacket.nickname);
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
+
         }
 
     }
