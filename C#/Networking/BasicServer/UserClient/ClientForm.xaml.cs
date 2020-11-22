@@ -32,10 +32,6 @@ namespace UserClient
 
         public void UpdateChatWindow(string message, HorizontalAlignment align)
         {
-            //MessageWindow.Dispatcher.Invoke(() =>
-            //{
-            //    MessageWindow.Text += message + Environment.NewLine;
-            //});
             MessageWnd.Dispatcher.Invoke(() =>
             {
                 var item = new ListViewItem();

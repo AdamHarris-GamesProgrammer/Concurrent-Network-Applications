@@ -8,6 +8,7 @@ using System.IO;
 using System.Text.Unicode;
 using System.Collections.Concurrent;
 using System.Threading;
+using Packets;
 
 namespace BasicServer
 {
@@ -58,17 +59,32 @@ namespace BasicServer
 
         private void ClientMethod(Client client)
         {
-            string recievedMessage;
+            Packet recievedMessage;
 
             while ((recievedMessage = client.Read()) != null)
             {
-                foreach(Client cli in mClients)
+                switch (recievedMessage.packetType)
                 {
-                    if (cli != client)
-                    {
-                        cli.Send(recievedMessage);
-                    }
+                    case PacketType.ChatMessage:
+                        ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
+                        foreach (Client cli in mClients)
+                        {
+                            if (cli != client)
+                            {
+                                cli.Send(chatPacket.mMessage);
+                            }
+                        }
+                        break;
+                    case PacketType.PrivateMessage:
+                        break;
+                    case PacketType.ClientName:
+                        break;
+                    default:
+                        break;
+
                 }
+
+
             }
 
             Console.WriteLine("Closing Connection");

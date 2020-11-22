@@ -61,7 +61,7 @@ namespace UserClient
 
             thread.Start();
 
-            
+
 
             clientForm.ShowDialog();
 
@@ -72,8 +72,6 @@ namespace UserClient
         {
             writer.Dispose();
             reader.Dispose();
-            //reader.Close();
-            //writer.Close();
             tcpClient.Close();
             isConnected = false;
         }
@@ -93,10 +91,7 @@ namespace UserClient
 
         private void ProcessServerResponse()
         {
-            while (isConnected)
-            {
-                clientForm.UpdateChatWindow(reader.ReadLine(), System.Windows.HorizontalAlignment.Left);
-            }
+            clientForm.UpdateChatWindow(reader.ReadLine(), System.Windows.HorizontalAlignment.Left);
         }
 
     }

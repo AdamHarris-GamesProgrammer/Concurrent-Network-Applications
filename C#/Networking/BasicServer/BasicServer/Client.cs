@@ -1,7 +1,9 @@
-﻿using System;
+﻿using Packets;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 
 namespace BasicServer
@@ -10,8 +12,11 @@ namespace BasicServer
     {
         private Socket mSocket;
         private NetworkStream mStream;
-        private StreamReader mReader;
-        private StreamWriter mWriter;
+        private BinaryReader mReader;
+        private BinaryWriter mWriter;
+        private BinaryFormatter mFormatter;
+
+
         private object mReadLock;
         private object mWriteLock;
 
@@ -23,8 +28,10 @@ namespace BasicServer
             mSocket = socket;
 
             mStream = new NetworkStream(mSocket);
-            mReader = new StreamReader(mStream, Encoding.UTF8);
-            mWriter = new StreamWriter(mStream, Encoding.UTF8);
+
+            mFormatter = new BinaryFormatter();
+            mReader = new BinaryReader(mStream, Encoding.UTF8);
+            mWriter = new BinaryWriter(mStream, Encoding.UTF8);
         }
 
         public void Close()
@@ -35,34 +42,42 @@ namespace BasicServer
             mSocket.Close();
         }
 
-        public string Read()
+        public Packet Read()
         {
             lock (mReadLock)
             {
-                string message = mReader.ReadLine();
-                return message;
+                int result = mReader.ReadInt32();
+                if (result != -1)
+                {
+                    byte[] buffer = mReader.ReadBytes(result);
+
+                    MemoryStream stream = new MemoryStream(buffer);
+
+                    return mFormatter.Deserialize(stream) as Packet;
+
+                }
+                else
+                {
+                    return null;
+                }
+
+
             }
         }
 
         public void Send(string message)
         {
-            mWriter.AutoFlush = false;
             lock (mWriteLock)
             {
-                mWriter.WriteLine(message);
+                MemoryStream stream = new MemoryStream();
+                mFormatter.Serialize(stream, message);
+
+                byte[] bufffer = stream.GetBuffer();
+
+                mWriter.Write(bufffer.Length);
+                mWriter.Write(bufffer);
                 mWriter.Flush();
             }
         }
-
-        public void SendImmediate(string message)
-        {
-            mWriter.AutoFlush = true;
-            lock (mWriteLock)
-            {
-                mWriter.WriteLine(message);
-            }
-        }
-
-
     }
 }
