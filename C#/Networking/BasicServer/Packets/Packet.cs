@@ -8,7 +8,8 @@ namespace Packets
         ChatMessage,
         PrivateMessage,
         ClientName,
-        Nickname
+        Nickname,
+        Disconnect
     }
 
     [Serializable]
@@ -43,6 +44,18 @@ namespace Packets
         {
             nickname = name;
             packetType = PacketType.Nickname;
+        }
+    }
+
+    [Serializable]
+    public class DisconnectPacket : Packet
+    {
+        public string nickname;
+
+        public DisconnectPacket(string name)
+        {
+            nickname = name;
+            packetType = PacketType.Disconnect;
         }
     }
 

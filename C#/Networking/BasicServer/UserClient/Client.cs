@@ -62,8 +62,6 @@ namespace UserClient
 
             thread.Start();
 
-
-
             clientForm.ShowDialog();
             clientForm.SetWindowTitle(nickname);
 
@@ -81,6 +79,9 @@ namespace UserClient
             if (!isConnected) return;
             isConnected = false;
             clientForm.DisconnectMessage(nickname);
+
+            DisconnectPacket disconnectPacket = new DisconnectPacket(nickname);
+            SerializePacket(disconnectPacket);
             
         }
 
@@ -108,12 +109,6 @@ namespace UserClient
             writer.Flush();
         }
 
-
-        public void DisconnectedMessage()
-        {
-            clientForm.DisconnectMessage(nickname);
-        }
-
         private void ProcessServerResponse()
         {
             int numberOfBytes;
@@ -122,6 +117,8 @@ namespace UserClient
             {
                 if((numberOfBytes = reader.ReadInt32()) != 0)
                 {
+                    if (!isConnected) break;
+
                     byte[] buffer = reader.ReadBytes(numberOfBytes);
 
                     MemoryStream stream = new MemoryStream(buffer);
@@ -146,10 +143,17 @@ namespace UserClient
                             break;
                         default:
                             break;
+                        case PacketType.Disconnect:
+                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
+                            clientForm.DisconnectMessage(disconnectPacket.nickname);
+                            break;
                     }
                 }
             }
 
+            reader.Close();
+            writer.Close();
+            tcpClient.Close();
         }
 
     }

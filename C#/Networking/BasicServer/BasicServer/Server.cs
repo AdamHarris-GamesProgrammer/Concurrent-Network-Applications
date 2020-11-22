@@ -93,6 +93,16 @@ namespace BasicServer
                             }
                         }
                         break;
+                    case PacketType.Disconnect:
+                        DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
+                        foreach (Client cli in mClients)
+                        {
+                            if (cli != client)
+                            {
+                                cli.Send(disconnectPacket);
+                            }
+                        }
+                        break;
 
                 }
 
