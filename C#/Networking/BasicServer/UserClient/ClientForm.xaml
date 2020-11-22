@@ -5,7 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:UserClient"
         mc:Ignorable="d"
-        Title="WPF Chat Window" Height="450" Width="437.6">
+        Title="WPF Chat Window" Height="450" Width="437.6"
+        x:Name="chatWindow">
     <Border Padding="10">
         <Grid>
             <Grid.RowDefinitions>

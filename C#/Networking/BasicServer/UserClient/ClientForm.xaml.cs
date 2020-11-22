@@ -35,6 +35,11 @@ namespace UserClient
             nicknameWindow.ShowDialog();
         }
 
+        public void SetWindowTitle(string title)
+        {
+            chatWindow.Title = title;
+        }
+
         public void SendMessageToWindow(string message, HorizontalAlignment align)
         {
             MessageWnd.Dispatcher.Invoke(() =>
@@ -58,15 +63,15 @@ namespace UserClient
             });
         }
 
-        public void SendNicknameToWindow(string nickname)
+        public void SendNicknameToWindow(string nickname, HorizontalAlignment align = HorizontalAlignment.Left)
         {
-            if (lastNicknameRecieved == nickname) return;
+            if (lastNicknameRecieved == nickname/* || nickname == "You"*/) return;
 
             MessageWnd.Dispatcher.Invoke(() =>
             {
                 var item = new ListViewItem();
 
-                item.HorizontalAlignment = HorizontalAlignment.Left;
+                item.HorizontalAlignment = align;
                 item.FontStyle = FontStyles.Italic;
                 item.Content = nickname;
 
@@ -76,6 +81,21 @@ namespace UserClient
             lastNicknameRecieved = nickname;
         }
 
+        public void DisconnectMessage(string disconnectedNickname)
+        {
+
+            MessageWnd.Dispatcher.Invoke(() =>
+            {
+                var item = new ListViewItem();
+
+                item.HorizontalAlignment = HorizontalAlignment.Center;
+                item.FontStyle = FontStyles.Italic;
+                item.Content = disconnectedNickname + " has disconnected";
+
+                MessageWnd.Items.Add(item);
+            });
+        }
+
         private void SubmitButton_Click(object sender, RoutedEventArgs e)
         {
             if (InputField.Text == "") return;
@@ -83,12 +103,11 @@ namespace UserClient
             mClient.SendMessage(InputField.Text);
             InputField.Text = "";
 
-            lastNicknameRecieved = "";
+            if(lastNicknameRecieved != "You") lastNicknameRecieved = "";
         }
 
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)
         {
-            mClient.DisconnectedMessage();
             mClient.DisconnectFromServer();
         }
 

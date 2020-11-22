@@ -34,6 +34,7 @@ namespace BasicServer
 
         public void Close()
         {
+            mSocket.Shutdown(SocketShutdown.Both);
             mStream.Close();
             mReader.Close();
             mWriter.Close();

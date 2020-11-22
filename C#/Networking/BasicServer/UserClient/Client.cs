@@ -26,10 +26,7 @@ namespace UserClient
             tcpClient = new TcpClient();
         }
 
-        public void SetNickname(string name)
-        {
-            nickname = name;
-        }
+
 
         public string GetNickname()
         {
@@ -68,44 +65,53 @@ namespace UserClient
 
 
             clientForm.ShowDialog();
+            clientForm.SetWindowTitle(nickname);
 
             DisconnectFromServer();
         }
 
+        public void SetNickname(string name)
+        {
+            nickname = name;
+            if (clientForm != null) clientForm.SetWindowTitle(name);
+        }
+
         public void DisconnectFromServer()
         {
-            writer.Dispose();
-            reader.Dispose();
-            tcpClient.Close();
+            if (!isConnected) return;
             isConnected = false;
+            clientForm.DisconnectMessage(nickname);
+            
         }
 
         public void SendMessage(string message)
         {
 
-            clientForm.SendMessageToWindow("Me: " + message, System.Windows.HorizontalAlignment.Right);
+            clientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
+            clientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
 
 
             NicknamePacket nicknamePacket = new NicknamePacket(nickname);
-            MemoryStream nicknameStream = new MemoryStream();
-            formatter.Serialize(nicknameStream, nicknamePacket);
-            byte[] nicknameBuffer = nicknameStream.GetBuffer();
-            writer.Write(nicknameBuffer.Length);
-            writer.Write(nicknameBuffer);
-            writer.Flush();
+            SerializePacket(nicknamePacket);
 
             ChatMessagePacket messagePacket = new ChatMessagePacket(message);
+            SerializePacket(messagePacket);
+        }
+
+        private void SerializePacket(Packet packetToSerialize)
+        {
             MemoryStream msgStream = new MemoryStream();
-            formatter.Serialize(msgStream, messagePacket);
+            formatter.Serialize(msgStream, packetToSerialize);
             byte[] buffer = msgStream.GetBuffer();
             writer.Write(buffer.Length);
             writer.Write(buffer);
             writer.Flush();
         }
 
+
         public void DisconnectedMessage()
         {
-            SendMessage(nickname + " has disconnected");
+            clientForm.DisconnectMessage(nickname);
         }
 
         private void ProcessServerResponse()
@@ -114,7 +120,7 @@ namespace UserClient
 
             while (isConnected)
             {
-                while ((numberOfBytes = reader.ReadInt32()) != 0)
+                if((numberOfBytes = reader.ReadInt32()) != 0)
                 {
                     byte[] buffer = reader.ReadBytes(numberOfBytes);
 
