@@ -1,6 +1,8 @@
-﻿using System;
+﻿using Packets;
+using System;
 using System.IO;
 using System.Net.Sockets;
+using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
 using System.Threading;
 
@@ -10,8 +12,9 @@ namespace UserClient
     {
         private TcpClient tcpClient;
         private NetworkStream stream;
-        private StreamWriter writer;
-        private StreamReader reader;
+        private BinaryWriter writer;
+        private BinaryReader reader;
+        private BinaryFormatter formatter;
         private ClientForm clientForm;
 
         private string nickname = "Username";
@@ -39,8 +42,9 @@ namespace UserClient
             {
                 tcpClient.Connect(ipAddress, port);
                 stream = tcpClient.GetStream();
-                writer = new StreamWriter(stream, Encoding.UTF8);
-                reader = new StreamReader(stream, Encoding.UTF8);
+                writer = new BinaryWriter(stream, Encoding.UTF8);
+                reader = new BinaryReader(stream, Encoding.UTF8);
+                formatter = new BinaryFormatter();
 
                 isConnected = true;
 
@@ -78,20 +82,55 @@ namespace UserClient
 
         public void SendMessage(string message)
         {
-            writer.WriteLine(nickname + ": " + message);
-            writer.Flush();
+            //writer.WriteLine(nickname + ": " + message);
+            //writer.Flush();
             clientForm.UpdateChatWindow("Me: " + message, System.Windows.HorizontalAlignment.Right);
+
+            ChatMessagePacket chatMsg = new ChatMessagePacket(message);
+
+            MemoryStream memStream = new MemoryStream();
+            formatter.Serialize(memStream, chatMsg);
+            byte[] buffer = memStream.GetBuffer();
+            writer.Write(buffer.Length);
+            writer.Write(buffer);
+            writer.Flush();
         }
 
         public void DisconnectedMessage()
         {
-            writer.WriteLine(nickname + " has left the chat");
-            writer.Flush();
+            //writer.WriteLine(nickname + " has left the chat");
+            //writer.Flush();
         }
 
         private void ProcessServerResponse()
         {
-            clientForm.UpdateChatWindow(reader.ReadLine(), System.Windows.HorizontalAlignment.Left);
+            int numberOfBytes;
+
+            while ((numberOfBytes = reader.ReadInt32()) != 0)
+            {
+                byte[] buffer = reader.ReadBytes(numberOfBytes);
+
+                MemoryStream stream = new MemoryStream(buffer);
+
+                Packet recievedMessage = new Packet();
+
+                recievedMessage = formatter.Deserialize(stream) as Packet;
+
+                switch (recievedMessage.packetType)
+                {
+                    case PacketType.ChatMessage:
+                        ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
+                        clientForm.UpdateChatWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
+                        break;
+                    case PacketType.PrivateMessage:
+                        break;
+                    case PacketType.ClientName:
+                        break;
+                    default:
+                        break;
+
+                }
+            }
         }
 
     }

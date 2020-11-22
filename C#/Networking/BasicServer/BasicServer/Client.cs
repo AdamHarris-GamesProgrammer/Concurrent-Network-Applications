@@ -24,14 +24,12 @@ namespace BasicServer
         {
             mReadLock = new object();
             mWriteLock = new object();
-
             mSocket = socket;
 
             mStream = new NetworkStream(mSocket);
-
-            mFormatter = new BinaryFormatter();
             mReader = new BinaryReader(mStream, Encoding.UTF8);
             mWriter = new BinaryWriter(mStream, Encoding.UTF8);
+            mFormatter = new BinaryFormatter();
         }
 
         public void Close()
@@ -65,7 +63,7 @@ namespace BasicServer
             }
         }
 
-        public void Send(string message)
+        public void Send(Packet message)
         {
             lock (mWriteLock)
             {

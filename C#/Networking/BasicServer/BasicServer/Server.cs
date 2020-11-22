@@ -71,7 +71,7 @@ namespace BasicServer
                         {
                             if (cli != client)
                             {
-                                cli.Send(chatPacket.mMessage);
+                                cli.Send(chatPacket);
                             }
                         }
                         break;
