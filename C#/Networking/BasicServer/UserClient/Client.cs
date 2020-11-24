@@ -70,6 +70,9 @@ namespace UserClient
 
         public void SetNickname(string name)
         {
+            SetNicknamePacket setNicknamePacket = new SetNicknamePacket(nickname, name);
+            SerializePacket(setNicknamePacket);
+
             nickname = name;
             if (clientForm != null) clientForm.SetWindowTitle(name);
         }

@@ -41,6 +41,17 @@ namespace BasicServer
             mSocket.Close();
         }
 
+        private string nickname = "Username";
+        public string GetNickname()
+        {
+            return nickname;
+        }
+
+        public void SetNickname(string newNickname)
+        {
+            nickname = newNickname;
+        }
+
         public Packet Read()
         {
             lock (mReadLock)

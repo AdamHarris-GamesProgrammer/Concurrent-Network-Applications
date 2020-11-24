@@ -20,7 +20,6 @@ namespace BasicServer
         struct ClientInformation
         {
             public Client client;
-            public string nickname;
         }
 
         private ConcurrentDictionary<int, ClientInformation> mClients;
@@ -52,7 +51,6 @@ namespace BasicServer
 
                 ClientInformation clientInformation = new ClientInformation();
                 clientInformation.client = client;
-                clientInformation.nickname = "Username";
 
                 mClients.TryAdd(index, clientInformation);
 
@@ -81,29 +79,20 @@ namespace BasicServer
 
             while ((recievedMessage = currentClient.Read()) != null)
             {
-                
+
                 switch (recievedMessage.packetType)
                 {
-
                     case PacketType.ChatMessage:
                         ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        foreach (ClientInformation cli in mClients.Values) { 
+                        foreach (ClientInformation cli in mClients.Values)
+                        {
                             if (cli.client != currentClient)
                             {
                                 cli.client.Send(chatPacket);
                             }
                         }
+                        break;
 
-
-                        break;
-                    case PacketType.PrivateMessage:
-                        break;
-                    case PacketType.ClientName:
-                        break;
-                    default:
-                        break;
-                    case PacketType.Empty:
-                        break;
                     case PacketType.Nickname:
                         NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
                         foreach (ClientInformation cli in mClients.Values)
@@ -124,7 +113,24 @@ namespace BasicServer
                             }
                         }
                         break;
-
+                    case PacketType.NewNickname:
+                        SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedMessage;
+                        foreach (ClientInformation cli in mClients.Values)
+                        {
+                            if (cli.client.GetNickname() == setNicknamePacket.oldNickname)
+                            {
+                                cli.client.SetNickname(setNicknamePacket.newNickname);
+                            }
+                        }
+                        break;
+                    case PacketType.PrivateMessage:
+                        break;
+                    case PacketType.ClientName:
+                        break;
+                    case PacketType.Empty:
+                        break;
+                    default:
+                        break;
                 }
 
 
@@ -137,7 +143,7 @@ namespace BasicServer
 
             mClients.TryRemove(index, out c);
 
-            if(mClients.Count == 0)
+            if (mClients.Count == 0)
             {
                 Stop();
             }

@@ -9,6 +9,7 @@ namespace Packets
         PrivateMessage,
         ClientName,
         Nickname,
+        NewNickname,
         Disconnect
     }
 
@@ -56,6 +57,20 @@ namespace Packets
         {
             nickname = name;
             packetType = PacketType.Disconnect;
+        }
+    }
+
+    [Serializable]
+    public class SetNicknamePacket : Packet
+    {
+        public string newNickname;
+        public string oldNickname;
+
+        public SetNicknamePacket(string oldName, string name)
+        {
+            oldNickname = oldName;
+            newNickname = name;
+            packetType = PacketType.NewNickname;
         }
     }
 
