@@ -51,6 +51,17 @@ namespace UserClient
             });
         }
 
+        public void UpdateClientListWindow(string[] users)
+        {
+            foreach(string user in users)
+            {
+                var item = new ListViewItem();
+                item.Content = user;
+
+                ClientList.Items.Add(item);
+            }
+        }
+
         public void SendNicknameToWindow(string nickname, HorizontalAlignment align = HorizontalAlignment.Left)
         {
             if (mLastNicknameRecieved == nickname) return;

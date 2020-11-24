@@ -19,10 +19,11 @@ namespace BasicServer
         private object mReadLock;
         private object mWriteLock;
 
-        public string Nickname
+        private string mNickname;
+        public String Nickname
         {
-            get { return Nickname; }
-            set { Nickname = value; }
+            get { return mNickname; }
+            set { mNickname = value; }
         }
 
         public Client(Socket socket)

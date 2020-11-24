@@ -18,23 +18,32 @@ namespace UserClient
         private ClientForm mClientForm;
         bool mIsConnected = false;
 
-
-        public string Nickname
+        private string mNickname;
+        public String Nickname
         {
-            get { return Nickname; }
-            set { 
-                SetNicknamePacket setNicknamePacket = new SetNicknamePacket(Nickname, value);
-                SerializePacket(setNicknamePacket);
-
-                Nickname = value;
-                if (mClientForm != null) mClientForm.SetWindowTitle(Nickname);
+            get
+            {
+                return mNickname;
+            }
+            set
+            {
+                mNickname = value;
+                SetNickname(mNickname);
             }
         }
 
+        private void SetNickname(string name)
+        {
+                SetNicknamePacket setNicknamePacket = new SetNicknamePacket(Nickname, name);
+                SerializePacket(setNicknamePacket);
+
+                if (mClientForm != null) mClientForm.SetWindowTitle(Nickname);
+        }
 
         public Client()
         {
             mTcpClient = new TcpClient();
+
         }
 
         public bool Connect(string ipAddress, int port)
@@ -64,10 +73,21 @@ namespace UserClient
 
             Thread thread = new Thread(ProcessServerResponse);
 
+            mClientForm.SetWindowTitle(Nickname);
+
+            string[] names =
+            {
+                "Adam", "John", "Harry", "Tom"
+            };
+
+            mClientForm.UpdateClientListWindow(names);
+
             thread.Start();
 
             mClientForm.ShowDialog();
-            mClientForm.SetWindowTitle(Nickname);
+
+            
+           
 
             DisconnectFromServer();
         }
@@ -137,6 +157,7 @@ namespace UserClient
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
                             mClientForm.DisconnectMessage(disconnectPacket.mNickname);
                             break;
+
                         default:
                             break;
                     }
