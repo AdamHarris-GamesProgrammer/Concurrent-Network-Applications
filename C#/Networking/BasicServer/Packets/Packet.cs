@@ -7,8 +7,6 @@ namespace Packets
         Empty,
         ChatMessage,
         PrivateMessage,
-        ClientName,
-        Nickname,
         NewNickname,
         Disconnect
     }
@@ -28,23 +26,13 @@ namespace Packets
     public class ChatMessagePacket : Packet
     {
         public string mMessage;
+        public string mSender;
 
-        public ChatMessagePacket(string message)
+        public ChatMessagePacket(string sender, string message)
         {
             mMessage = message;
+            mSender = sender;
             packetType = PacketType.ChatMessage;
-        }
-    }
-
-    [Serializable]
-    public class NicknamePacket : Packet
-    {
-        public string nickname;
-
-        public NicknamePacket(string name)
-        {
-            nickname = name;
-            packetType = PacketType.Nickname;
         }
     }
 

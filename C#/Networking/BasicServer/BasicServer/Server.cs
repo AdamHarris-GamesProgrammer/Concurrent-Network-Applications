@@ -16,13 +16,7 @@ namespace BasicServer
     {
         private TcpListener mTcpListener;
 
-
-        struct ClientInformation
-        {
-            public Client client;
-        }
-
-        private ConcurrentDictionary<int, ClientInformation> mClients;
+        private ConcurrentDictionary<int, Client> mClients;
 
         public Server(string ipAddress, int port)
         {
@@ -32,7 +26,7 @@ namespace BasicServer
 
         public void Start()
         {
-            mClients = new ConcurrentDictionary<int, ClientInformation>();
+            mClients = new ConcurrentDictionary<int, Client>();
 
             mTcpListener.Start();
 
@@ -49,10 +43,7 @@ namespace BasicServer
 
                 Client client = new Client(socket);
 
-                ClientInformation clientInformation = new ClientInformation();
-                clientInformation.client = client;
-
-                mClients.TryAdd(index, clientInformation);
+                mClients.TryAdd(index, client);
 
 
 
@@ -71,11 +62,23 @@ namespace BasicServer
             Console.WriteLine("Closed Connection");
         }
 
+        private void SendPacket(Client currentClient, Packet packet)
+        {
+            foreach (Client cli in mClients.Values)
+            {
+                //Sends packet to all people who are not the current client, this is because the current client already has a local copy
+                if (cli != currentClient)
+                {
+                    cli.Send(packet);
+                }
+            }
+        }
+
         private void ClientMethod(int index)
         {
             Packet recievedMessage;
 
-            Client currentClient = mClients[index].client;
+            Client currentClient = mClients[index];
 
             while ((recievedMessage = currentClient.Read()) != null)
             {
@@ -84,62 +87,35 @@ namespace BasicServer
                 {
                     case PacketType.ChatMessage:
                         ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        foreach (ClientInformation cli in mClients.Values)
-                        {
-                            if (cli.client != currentClient)
-                            {
-                                cli.client.Send(chatPacket);
-                            }
-                        }
-                        break;
-
-                    case PacketType.Nickname:
-                        NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
-                        foreach (ClientInformation cli in mClients.Values)
-                        {
-                            if (cli.client != currentClient)
-                            {
-                                cli.client.Send(nicknamePacket);
-                            }
-                        }
+                        SendPacket(currentClient, chatPacket);
                         break;
                     case PacketType.Disconnect:
                         DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
-                        foreach (ClientInformation cli in mClients.Values)
-                        {
-                            if (cli.client != currentClient)
-                            {
-                                cli.client.Send(disconnectPacket);
-                            }
-                        }
+                        SendPacket(currentClient, disconnectPacket);
                         break;
                     case PacketType.NewNickname:
                         SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedMessage;
-                        foreach (ClientInformation cli in mClients.Values)
+                        foreach (Client cli in mClients.Values)
                         {
-                            if (cli.client.GetNickname() == setNicknamePacket.oldNickname)
+                            if (cli.GetNickname() == setNicknamePacket.oldNickname)
                             {
-                                cli.client.SetNickname(setNicknamePacket.newNickname);
+                                cli.SetNickname(setNicknamePacket.newNickname);
                             }
                         }
                         break;
                     case PacketType.PrivateMessage:
-                        break;
-                    case PacketType.ClientName:
                         break;
                     case PacketType.Empty:
                         break;
                     default:
                         break;
                 }
-
-
             }
 
             Console.WriteLine("Closing Connection");
-            mClients[index].client.Close();
+            mClients[index].Close();
 
-            ClientInformation c;
+            Client c;
 
             mClients.TryRemove(index, out c);
 

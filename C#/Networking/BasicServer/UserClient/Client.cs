@@ -90,15 +90,12 @@ namespace UserClient
 
         public void SendMessage(string message)
         {
-
+            //Updates local chat window
             clientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
             clientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
 
-
-            NicknamePacket nicknamePacket = new NicknamePacket(nickname);
-            SerializePacket(nicknamePacket);
-
-            ChatMessagePacket messagePacket = new ChatMessagePacket(message);
+            //Send message packet to network
+            ChatMessagePacket messagePacket = new ChatMessagePacket(nickname, message);
             SerializePacket(messagePacket);
         }
 
@@ -132,23 +129,18 @@ namespace UserClient
                     {
                         case PacketType.ChatMessage:
                             ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
+                            clientForm.SendNicknameToWindow(chatPacket.mSender);
                             clientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
                             break;
                         case PacketType.PrivateMessage:
                             break;
-                        case PacketType.ClientName:
-                            break;
                         case PacketType.Empty:
-                            break;
-                        case PacketType.Nickname:
-                            NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
-                            clientForm.SendNicknameToWindow(nicknamePacket.nickname);
-                            break;
-                        default:
                             break;
                         case PacketType.Disconnect:
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
                             clientForm.DisconnectMessage(disconnectPacket.nickname);
+                            break;
+                        default:
                             break;
                     }
                 }
