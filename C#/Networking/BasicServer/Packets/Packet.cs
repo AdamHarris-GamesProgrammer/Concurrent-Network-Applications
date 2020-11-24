@@ -14,11 +14,11 @@ namespace Packets
     [Serializable]
     public class Packet
     {
-        public PacketType packetType { get; set; }
+        public PacketType mPacketType { get; set; }
 
         public Packet()
         {
-            packetType = PacketType.Empty;
+            mPacketType = PacketType.Empty;
         }
     }
 
@@ -32,33 +32,33 @@ namespace Packets
         {
             mMessage = message;
             mSender = sender;
-            packetType = PacketType.ChatMessage;
+            mPacketType = PacketType.ChatMessage;
         }
     }
 
     [Serializable]
     public class DisconnectPacket : Packet
     {
-        public string nickname;
+        public string mNickname;
 
         public DisconnectPacket(string name)
         {
-            nickname = name;
-            packetType = PacketType.Disconnect;
+            mNickname = name;
+            mPacketType = PacketType.Disconnect;
         }
     }
 
     [Serializable]
     public class SetNicknamePacket : Packet
     {
-        public string newNickname;
-        public string oldNickname;
+        public string mNewNickname;
+        public string mOldNickname;
 
         public SetNicknamePacket(string oldName, string name)
         {
-            oldNickname = oldName;
-            newNickname = name;
-            packetType = PacketType.NewNickname;
+            mOldNickname = oldName;
+            mNewNickname = name;
+            mPacketType = PacketType.NewNickname;
         }
     }
 

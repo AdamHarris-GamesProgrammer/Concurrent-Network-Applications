@@ -1,11 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 using System.Net.Sockets;
 using System.Net;
-using System.Reflection;
-using System.IO;
-using System.Text.Unicode;
 using System.Collections.Concurrent;
 using System.Threading;
 using Packets;
@@ -83,7 +78,7 @@ namespace BasicServer
             while ((recievedMessage = currentClient.Read()) != null)
             {
 
-                switch (recievedMessage.packetType)
+                switch (recievedMessage.mPacketType)
                 {
                     case PacketType.ChatMessage:
                         ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
@@ -97,9 +92,9 @@ namespace BasicServer
                         SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedMessage;
                         foreach (Client cli in mClients.Values)
                         {
-                            if (cli.GetNickname() == setNicknamePacket.oldNickname)
+                            if (cli.Nickname == setNicknamePacket.mOldNickname)
                             {
-                                cli.SetNickname(setNicknamePacket.newNickname);
+                                cli.Nickname = setNicknamePacket.mNewNickname;
                             }
                         }
                         break;

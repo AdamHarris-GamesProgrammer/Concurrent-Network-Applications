@@ -1,17 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 
 
 
@@ -23,8 +12,7 @@ namespace UserClient
     public partial class ClientForm : Window
     {
         private Client mClient;
-
-        private string lastNicknameRecieved = "";
+        private string mLastNicknameRecieved = "";
 
         public ClientForm(Client client)
         {
@@ -65,7 +53,7 @@ namespace UserClient
 
         public void SendNicknameToWindow(string nickname, HorizontalAlignment align = HorizontalAlignment.Left)
         {
-            if (lastNicknameRecieved == nickname) return;
+            if (mLastNicknameRecieved == nickname) return;
 
             MessageWnd.Dispatcher.Invoke(() =>
             {
@@ -78,7 +66,7 @@ namespace UserClient
                 MessageWnd.Items.Add(item);
             });
 
-            lastNicknameRecieved = nickname;
+            mLastNicknameRecieved = nickname;
         }
 
         public void DisconnectMessage(string disconnectedNickname)
@@ -103,7 +91,7 @@ namespace UserClient
             mClient.SendMessage(InputField.Text);
             InputField.Text = "";
 
-            if(lastNicknameRecieved != "You") lastNicknameRecieved = "";
+            if(mLastNicknameRecieved != "You") mLastNicknameRecieved = "";
         }
 
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)

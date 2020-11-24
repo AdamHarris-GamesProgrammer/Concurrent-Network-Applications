@@ -10,40 +10,44 @@ namespace UserClient
 {
     public class Client
     {
-        private TcpClient tcpClient;
-        private NetworkStream stream;
-        private BinaryWriter writer;
-        private BinaryReader reader;
-        private BinaryFormatter formatter;
-        private ClientForm clientForm;
+        private TcpClient mTcpClient;
+        private NetworkStream mStream;
+        private BinaryWriter mWriter;
+        private BinaryReader mReader;
+        private BinaryFormatter mFormatter;
+        private ClientForm mClientForm;
+        bool mIsConnected = false;
 
-        private string nickname = "Username";
 
-        bool isConnected = false;
-
-        public Client()
+        public string Nickname
         {
-            tcpClient = new TcpClient();
+            get { return Nickname; }
+            set { 
+                SetNicknamePacket setNicknamePacket = new SetNicknamePacket(Nickname, value);
+                SerializePacket(setNicknamePacket);
+
+                Nickname = value;
+                if (mClientForm != null) mClientForm.SetWindowTitle(Nickname);
+            }
         }
 
 
-
-        public string GetNickname()
+        public Client()
         {
-            return nickname;
+            mTcpClient = new TcpClient();
         }
 
         public bool Connect(string ipAddress, int port)
         {
             try
             {
-                tcpClient.Connect(ipAddress, port);
-                stream = tcpClient.GetStream();
-                writer = new BinaryWriter(stream, Encoding.UTF8);
-                reader = new BinaryReader(stream, Encoding.UTF8);
-                formatter = new BinaryFormatter();
+                mTcpClient.Connect(ipAddress, port);
+                mStream = mTcpClient.GetStream();
+                mWriter = new BinaryWriter(mStream, Encoding.UTF8);
+                mReader = new BinaryReader(mStream, Encoding.UTF8);
+                mFormatter = new BinaryFormatter();
 
-                isConnected = true;
+                mIsConnected = true;
 
                 return true;
             }
@@ -56,34 +60,27 @@ namespace UserClient
 
         public void Run()
         {
-            clientForm = new ClientForm(this);
+            mClientForm = new ClientForm(this);
 
             Thread thread = new Thread(ProcessServerResponse);
 
             thread.Start();
 
-            clientForm.ShowDialog();
-            clientForm.SetWindowTitle(nickname);
+            mClientForm.ShowDialog();
+            mClientForm.SetWindowTitle(Nickname);
 
             DisconnectFromServer();
         }
 
-        public void SetNickname(string name)
-        {
-            SetNicknamePacket setNicknamePacket = new SetNicknamePacket(nickname, name);
-            SerializePacket(setNicknamePacket);
 
-            nickname = name;
-            if (clientForm != null) clientForm.SetWindowTitle(name);
-        }
 
         public void DisconnectFromServer()
         {
-            if (!isConnected) return;
-            isConnected = false;
-            clientForm.DisconnectMessage(nickname);
+            if (!mIsConnected) return;
+            mIsConnected = false;
+            mClientForm.DisconnectMessage(Nickname);
 
-            DisconnectPacket disconnectPacket = new DisconnectPacket(nickname);
+            DisconnectPacket disconnectPacket = new DisconnectPacket(Nickname);
             SerializePacket(disconnectPacket);
             
         }
@@ -91,46 +88,46 @@ namespace UserClient
         public void SendMessage(string message)
         {
             //Updates local chat window
-            clientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
-            clientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
+            mClientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
+            mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
 
             //Send message packet to network
-            ChatMessagePacket messagePacket = new ChatMessagePacket(nickname, message);
+            ChatMessagePacket messagePacket = new ChatMessagePacket(Nickname, message);
             SerializePacket(messagePacket);
         }
 
         private void SerializePacket(Packet packetToSerialize)
         {
             MemoryStream msgStream = new MemoryStream();
-            formatter.Serialize(msgStream, packetToSerialize);
+            mFormatter.Serialize(msgStream, packetToSerialize);
             byte[] buffer = msgStream.GetBuffer();
-            writer.Write(buffer.Length);
-            writer.Write(buffer);
-            writer.Flush();
+            mWriter.Write(buffer.Length);
+            mWriter.Write(buffer);
+            mWriter.Flush();
         }
 
         private void ProcessServerResponse()
         {
             int numberOfBytes;
 
-            while (isConnected)
+            while (mIsConnected)
             {
-                if((numberOfBytes = reader.ReadInt32()) != 0)
+                if((numberOfBytes = mReader.ReadInt32()) != 0)
                 {
-                    if (!isConnected) break;
+                    if (!mIsConnected) break;
 
-                    byte[] buffer = reader.ReadBytes(numberOfBytes);
+                    byte[] buffer = mReader.ReadBytes(numberOfBytes);
 
                     MemoryStream stream = new MemoryStream(buffer);
 
-                    Packet recievedMessage = formatter.Deserialize(stream) as Packet;
+                    Packet recievedMessage = mFormatter.Deserialize(stream) as Packet;
 
-                    switch (recievedMessage.packetType)
+                    switch (recievedMessage.mPacketType)
                     {
                         case PacketType.ChatMessage:
                             ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                            clientForm.SendNicknameToWindow(chatPacket.mSender);
-                            clientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
+                            mClientForm.SendNicknameToWindow(chatPacket.mSender);
+                            mClientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
                             break;
                         case PacketType.PrivateMessage:
                             break;
@@ -138,7 +135,7 @@ namespace UserClient
                             break;
                         case PacketType.Disconnect:
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
-                            clientForm.DisconnectMessage(disconnectPacket.nickname);
+                            mClientForm.DisconnectMessage(disconnectPacket.mNickname);
                             break;
                         default:
                             break;
@@ -146,9 +143,9 @@ namespace UserClient
                 }
             }
 
-            reader.Close();
-            writer.Close();
-            tcpClient.Close();
+            mReader.Close();
+            mWriter.Close();
+            mTcpClient.Close();
         }
 
     }

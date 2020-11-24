@@ -16,9 +16,14 @@ namespace BasicServer
         private BinaryWriter mWriter;
         private BinaryFormatter mFormatter;
 
-
         private object mReadLock;
         private object mWriteLock;
+
+        public string Nickname
+        {
+            get { return Nickname; }
+            set { Nickname = value; }
+        }
 
         public Client(Socket socket)
         {
@@ -30,6 +35,8 @@ namespace BasicServer
             mReader = new BinaryReader(mStream, Encoding.UTF8);
             mWriter = new BinaryWriter(mStream, Encoding.UTF8);
             mFormatter = new BinaryFormatter();
+
+            Nickname = "Username";
         }
 
         public void Close()
@@ -39,17 +46,6 @@ namespace BasicServer
             mReader.Close();
             mWriter.Close();
             mSocket.Close();
-        }
-
-        private string nickname = "Username";
-        public string GetNickname()
-        {
-            return nickname;
-        }
-
-        public void SetNickname(string newNickname)
-        {
-            nickname = newNickname;
         }
 
         public Packet Read()

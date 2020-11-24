@@ -26,7 +26,7 @@ namespace UserClient
             InitializeComponent();
 
             mOwner = client;
-            currentName.Content = mOwner.GetNickname();
+            currentName.Content = mOwner.Nickname;
         }
 
         private void cancelButton_Click(object sender, RoutedEventArgs e)
@@ -36,7 +36,7 @@ namespace UserClient
 
         private void submitButton_Click(object sender, RoutedEventArgs e)
         {
-            mOwner.SetNickname(nicknameInput.Text);
+            mOwner.Nickname = nicknameInput.Text;
             Close();
         }
     }
