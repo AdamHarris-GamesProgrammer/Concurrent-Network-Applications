@@ -16,7 +16,14 @@ namespace BasicServer
     {
         private TcpListener mTcpListener;
 
-        private ConcurrentDictionary<int, Client> mClients;
+
+        struct ClientInformation
+        {
+            public Client client;
+            public string nickname;
+        }
+
+        private ConcurrentDictionary<int, ClientInformation> mClients;
 
         public Server(string ipAddress, int port)
         {
@@ -26,7 +33,7 @@ namespace BasicServer
 
         public void Start()
         {
-            mClients = new ConcurrentDictionary<int, Client>();
+            mClients = new ConcurrentDictionary<int, ClientInformation>();
 
             mTcpListener.Start();
 
@@ -43,7 +50,11 @@ namespace BasicServer
 
                 Client client = new Client(socket);
 
-                mClients.TryAdd(index, client);
+                ClientInformation clientInformation = new ClientInformation();
+                clientInformation.client = client;
+                clientInformation.nickname = "Username";
+
+                mClients.TryAdd(index, clientInformation);
 
 
 
@@ -66,7 +77,7 @@ namespace BasicServer
         {
             Packet recievedMessage;
 
-            Client currentClient = mClients[index];
+            Client currentClient = mClients[index].client;
 
             while ((recievedMessage = currentClient.Read()) != null)
             {
@@ -76,10 +87,10 @@ namespace BasicServer
 
                     case PacketType.ChatMessage:
                         ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        foreach (Client cli in mClients.Values) { 
-                            if (cli != currentClient)
+                        foreach (ClientInformation cli in mClients.Values) { 
+                            if (cli.client != currentClient)
                             {
-                                cli.Send(chatPacket);
+                                cli.client.Send(chatPacket);
                             }
                         }
 
@@ -95,21 +106,21 @@ namespace BasicServer
                         break;
                     case PacketType.Nickname:
                         NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
-                        foreach (Client cli in mClients.Values)
+                        foreach (ClientInformation cli in mClients.Values)
                         {
-                            if (cli != currentClient)
+                            if (cli.client != currentClient)
                             {
-                                cli.Send(nicknamePacket);
+                                cli.client.Send(nicknamePacket);
                             }
                         }
                         break;
                     case PacketType.Disconnect:
                         DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
-                        foreach (Client cli in mClients.Values)
+                        foreach (ClientInformation cli in mClients.Values)
                         {
-                            if (cli != currentClient)
+                            if (cli.client != currentClient)
                             {
-                                cli.Send(disconnectPacket);
+                                cli.client.Send(disconnectPacket);
                             }
                         }
                         break;
@@ -120,9 +131,10 @@ namespace BasicServer
             }
 
             Console.WriteLine("Closing Connection");
-            mClients[index].Close();
+            mClients[index].client.Close();
 
-            Client c;
+            ClientInformation c;
+
             mClients.TryRemove(index, out c);
 
             if(mClients.Count == 0)
