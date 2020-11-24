@@ -16,7 +16,7 @@ namespace BasicServer
     {
         private TcpListener mTcpListener;
 
-        private ConcurrentBag<Client> mClients;
+        private ConcurrentDictionary<int, Client> mClients;
 
         public Server(string ipAddress, int port)
         {
@@ -26,25 +26,30 @@ namespace BasicServer
 
         public void Start()
         {
-            mClients = new ConcurrentBag<Client>();
+            mClients = new ConcurrentDictionary<int, Client>();
 
             mTcpListener.Start();
 
-            while (mClients.Count != 4)
+            int clientIndex = 0;
+
+            while (true)
             {
+                int index = clientIndex;
+                clientIndex++;
+
                 Console.WriteLine("Awaiting Connection");
 
                 Socket socket = mTcpListener.AcceptSocket();
 
                 Client client = new Client(socket);
 
-                mClients.Add(client);
+                mClients.TryAdd(index, client);
 
 
 
                 Console.WriteLine("Accepted Connection");
 
-                Thread thread = new Thread(() => { ClientMethod(client); });
+                Thread thread = new Thread(() => { ClientMethod(index); });
 
                 thread.Start();
             }
@@ -57,23 +62,28 @@ namespace BasicServer
             Console.WriteLine("Closed Connection");
         }
 
-        private void ClientMethod(Client client)
+        private void ClientMethod(int index)
         {
             Packet recievedMessage;
 
-            while ((recievedMessage = client.Read()) != null)
+            Client currentClient = mClients[index];
+
+            while ((recievedMessage = currentClient.Read()) != null)
             {
+                
                 switch (recievedMessage.packetType)
                 {
+
                     case PacketType.ChatMessage:
                         ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        foreach (Client cli in mClients)
-                        {
-                            if (cli != client)
+                        foreach (Client cli in mClients.Values) { 
+                            if (cli != currentClient)
                             {
                                 cli.Send(chatPacket);
                             }
                         }
+
+
                         break;
                     case PacketType.PrivateMessage:
                         break;
@@ -85,9 +95,9 @@ namespace BasicServer
                         break;
                     case PacketType.Nickname:
                         NicknamePacket nicknamePacket = (NicknamePacket)recievedMessage;
-                        foreach (Client cli in mClients)
+                        foreach (Client cli in mClients.Values)
                         {
-                            if (cli != client)
+                            if (cli != currentClient)
                             {
                                 cli.Send(nicknamePacket);
                             }
@@ -95,9 +105,9 @@ namespace BasicServer
                         break;
                     case PacketType.Disconnect:
                         DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
-                        foreach (Client cli in mClients)
+                        foreach (Client cli in mClients.Values)
                         {
-                            if (cli != client)
+                            if (cli != currentClient)
                             {
                                 cli.Send(disconnectPacket);
                             }
@@ -110,9 +120,10 @@ namespace BasicServer
             }
 
             Console.WriteLine("Closing Connection");
-            client.Close();
+            mClients[index].Close();
 
-            mClients.TryTake(out client);
+            Client c;
+            mClients.TryRemove(index, out c);
 
             if(mClients.Count == 0)
             {

@@ -65,7 +65,7 @@ namespace UserClient
 
         public void SendNicknameToWindow(string nickname, HorizontalAlignment align = HorizontalAlignment.Left)
         {
-            if (lastNicknameRecieved == nickname/* || nickname == "You"*/) return;
+            if (lastNicknameRecieved == nickname) return;
 
             MessageWnd.Dispatcher.Invoke(() =>
             {
@@ -109,6 +109,10 @@ namespace UserClient
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)
         {
             mClient.DisconnectFromServer();
+
+            InputField.IsEnabled = false;
+            InputField.Text = "You can no longer send messages.";
+            SubmitButton.IsEnabled = false;
         }
 
         private void UsernameButton_Click(object sender, RoutedEventArgs e)
