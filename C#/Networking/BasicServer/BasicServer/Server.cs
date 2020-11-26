@@ -4,6 +4,7 @@ using System.Net;
 using System.Collections.Concurrent;
 using System.Threading;
 using Packets;
+using System.Collections.Generic;
 
 namespace BasicServer
 {
@@ -57,7 +58,7 @@ namespace BasicServer
             Console.WriteLine("Closed Connection");
         }
 
-        private void SendPacket(Client currentClient, Packet packet)
+        private void SendToOthers(Client currentClient, Packet packet)
         {
             foreach (Client cli in mClients.Values)
             {
@@ -66,6 +67,14 @@ namespace BasicServer
                 {
                     cli.Send(packet);
                 }
+            }
+        }
+
+        private void SendToAll(Packet packet)
+        {
+            foreach (Client cli in mClients.Values)
+            {
+                cli.Send(packet);
             }
         }
 
@@ -82,21 +91,29 @@ namespace BasicServer
                 {
                     case PacketType.ChatMessage:
                         ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        SendPacket(currentClient, chatPacket);
+                        SendToOthers(currentClient, chatPacket);
                         break;
                     case PacketType.Disconnect:
                         DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
-                        SendPacket(currentClient, disconnectPacket);
+                        SendToOthers(currentClient, disconnectPacket);
                         break;
                     case PacketType.NewNickname:
                         SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedMessage;
+
+                        List<string> names = new List<string>();
+
                         foreach (Client cli in mClients.Values)
                         {
                             if (cli.Nickname == setNicknamePacket.mOldNickname)
                             {
                                 cli.Nickname = setNicknamePacket.mNewNickname;
                             }
+
+                            names.Add(cli.Nickname);
                         }
+
+                        UpdateClientList(names);
+
                         break;
                     case PacketType.PrivateMessage:
                         break;
@@ -119,5 +136,13 @@ namespace BasicServer
                 Stop();
             }
         }
+
+        private void UpdateClientList(List<string> names)
+        {
+            names.Sort();
+            NicknameWindowPacket nicknameWindowPacket = new NicknameWindowPacket(names);
+            SendToAll(nicknameWindowPacket);
+        }
+
     }
 }

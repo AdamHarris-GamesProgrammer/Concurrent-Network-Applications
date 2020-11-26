@@ -53,13 +53,20 @@ namespace UserClient
 
         public void UpdateClientListWindow(string[] users)
         {
-            foreach(string user in users)
+            ClientList.Dispatcher.Invoke(() =>
             {
-                var item = new ListViewItem();
-                item.Content = user;
+                ClientList.Items.Clear();
 
-                ClientList.Items.Add(item);
-            }
+                foreach (string user in users)
+                {
+                    if (user == mClient.Nickname) continue;
+
+                    var item = new ListViewItem();
+                    item.Content = user;
+
+                    ClientList.Items.Add(item);
+                }
+            });
         }
 
         public void SendNicknameToWindow(string nickname, HorizontalAlignment align = HorizontalAlignment.Left)

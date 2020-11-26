@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace Packets
 {
@@ -8,7 +9,8 @@ namespace Packets
         ChatMessage,
         PrivateMessage,
         NewNickname,
-        Disconnect
+        Disconnect,
+        NicknameWindow
     }
 
     [Serializable]
@@ -61,5 +63,17 @@ namespace Packets
             mPacketType = PacketType.NewNickname;
         }
     }
+
+    [Serializable]
+    public class NicknameWindowPacket : Packet
+    {
+        public List<string> mNames;
+        public NicknameWindowPacket(List<string> names)
+        {
+            mNames = new List<string>(names);
+            mPacketType = PacketType.NicknameWindow;
+        }
+    }
+
 
 }

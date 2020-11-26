@@ -16,6 +16,8 @@ namespace UserClient
         private BinaryReader mReader;
         private BinaryFormatter mFormatter;
         private ClientForm mClientForm;
+
+
         bool mIsConnected = false;
 
         private string mNickname;
@@ -23,12 +25,13 @@ namespace UserClient
         {
             get
             {
+                if (mNickname == null) return "Username";
                 return mNickname;
             }
             set
             {
+                SetNickname(value);
                 mNickname = value;
-                SetNickname(mNickname);
             }
         }
 
@@ -43,7 +46,6 @@ namespace UserClient
         public Client()
         {
             mTcpClient = new TcpClient();
-
         }
 
         public bool Connect(string ipAddress, int port)
@@ -75,19 +77,10 @@ namespace UserClient
 
             mClientForm.SetWindowTitle(Nickname);
 
-            string[] names =
-            {
-                "Adam", "John", "Harry", "Tom"
-            };
-
-            mClientForm.UpdateClientListWindow(names);
-
             thread.Start();
 
             mClientForm.ShowDialog();
 
-            
-           
 
             DisconnectFromServer();
         }
@@ -157,7 +150,12 @@ namespace UserClient
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
                             mClientForm.DisconnectMessage(disconnectPacket.mNickname);
                             break;
-
+                        case PacketType.NicknameWindow:
+                            NicknameWindowPacket nicknameWindowPacket = (NicknameWindowPacket)recievedMessage;
+                            
+                            string[] names = nicknameWindowPacket.mNames.ToArray();
+                            mClientForm.UpdateClientListWindow(names);
+                            break;
                         default:
                             break;
                     }
