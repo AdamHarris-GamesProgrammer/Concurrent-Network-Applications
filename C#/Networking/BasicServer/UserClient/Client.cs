@@ -133,12 +133,12 @@ namespace UserClient
 
                     MemoryStream stream = new MemoryStream(buffer);
 
-                    Packet recievedMessage = mFormatter.Deserialize(stream) as Packet;
+                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
 
-                    switch (recievedMessage.mPacketType)
+                    switch (recievedPackage.mPacketType)
                     {
                         case PacketType.ChatMessage:
-                            ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
+                            ChatMessagePacket chatPacket = (ChatMessagePacket)recievedPackage;
                             mClientForm.SendNicknameToWindow(chatPacket.mSender);
                             mClientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
                             break;
@@ -147,11 +147,11 @@ namespace UserClient
                         case PacketType.Empty:
                             break;
                         case PacketType.Disconnect:
-                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
+                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
                             mClientForm.DisconnectMessage(disconnectPacket.mNickname);
                             break;
                         case PacketType.NicknameWindow:
-                            NicknameWindowPacket nicknameWindowPacket = (NicknameWindowPacket)recievedMessage;
+                            NicknameWindowPacket nicknameWindowPacket = (NicknameWindowPacket)recievedPackage;
                             
                             string[] names = nicknameWindowPacket.mNames.ToArray();
                             mClientForm.UpdateClientListWindow(names);

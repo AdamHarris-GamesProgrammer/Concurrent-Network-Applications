@@ -126,5 +126,10 @@ namespace UserClient
             ChangeNickname nicknameWindow = new ChangeNickname(mClient);
             nicknameWindow.ShowDialog();
         }
+
+        private void ConnectButton_Click(object sender, RoutedEventArgs e)
+        {
+
+        }
     }
 }
