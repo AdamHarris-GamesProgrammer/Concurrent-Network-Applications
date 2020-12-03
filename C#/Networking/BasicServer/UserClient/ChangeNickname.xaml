@@ -7,7 +7,7 @@
         mc:Ignorable="d"
         Title="Set Nickname" Height="200" Width="400">
 
-    <Border Padding="5">
+    <Border Padding="5" FocusManager.FocusedElement="{Binding ElementName=nicknameInput}">
         <Grid>
             <Grid.RowDefinitions>
                 <RowDefinition Height="2*"/>

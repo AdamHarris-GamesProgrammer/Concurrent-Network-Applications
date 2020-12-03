@@ -135,12 +135,16 @@ namespace UserClient
             if(mSelectedClient == "")
             {
                 mClient.SendMessage(InputField.Text);
+
+                SetButtonText("Send Message");
             }
             else
             {
                 mClient.SendPrivateMessage(mSelectedClient, InputField.Text);
                 
                 ClientList.SelectedItem = null;
+
+                SetButtonText("Send Message");
             }
             
 
@@ -171,6 +175,11 @@ namespace UserClient
 
         }
 
+        private void SetButtonText(string text)
+        {
+            SubmitButton.Content = text;
+        }
+
         private void ClientList_Selected(object sender, RoutedEventArgs e)
         {
             var item = ClientList.SelectedItem as ListViewItem;
@@ -178,6 +187,7 @@ namespace UserClient
             if (item == null) return;
 
             mSelectedClient = (string)item.Content;
+            SetButtonText("Send Message to "+ System.Environment.NewLine + mSelectedClient);
 
         }
     }
