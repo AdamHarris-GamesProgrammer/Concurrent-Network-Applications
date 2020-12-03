@@ -2,6 +2,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -26,6 +27,8 @@ namespace BasicServer
             set { mNickname = value; }
         }
 
+        public IPEndPoint mIpEndPoint;
+
         public Client(Socket socket)
         {
             mReadLock = new object();
@@ -49,7 +52,7 @@ namespace BasicServer
             mSocket.Close();
         }
 
-        public Packet Read()
+        public Packet TcpRead()
         {
             lock (mReadLock)
             {
@@ -70,7 +73,7 @@ namespace BasicServer
             }
         }
 
-        public void Send(Packet message)
+        public void TcpSend(Packet message)
         {
             lock (mWriteLock)
             {

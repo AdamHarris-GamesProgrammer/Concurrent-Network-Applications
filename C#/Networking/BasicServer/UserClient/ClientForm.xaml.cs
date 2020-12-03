@@ -1,4 +1,5 @@
-﻿using System.Windows;
+﻿using System.Collections.Generic;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 
@@ -14,10 +15,24 @@ namespace UserClient
         private Client mClient;
         private string mLastNicknameRecieved = "";
 
+        private string mSelectedClient = "";       
+
+        List<TabItem> mMessageWindows;
         public ClientForm(Client client)
         {
             InitializeComponent();
             mClient = client;
+
+
+            //mMessageWindows = new List<TabItem>();
+            //MessageTabs.ItemsSource = mMessageWindows;
+
+            //var item = new TabItem();
+
+            //item.Header = "Group Chat";
+            //mMessageWindows.Add(item);
+
+
 
             ChangeNickname nicknameWindow = new ChangeNickname(mClient);
             nicknameWindow.ShowDialog();
@@ -44,7 +59,7 @@ namespace UserClient
                 }
 
                 item.HorizontalAlignment = align;
- 
+
                 item.Content = message;
 
                 MessageWnd.Items.Add(item);
@@ -67,7 +82,17 @@ namespace UserClient
                     ClientList.Items.Add(item);
                 }
             });
+
+
         }
+
+        public void SendPrivateMessage(string recipient, string message)
+        {
+            var test = new TabItem();
+
+            
+        }
+
 
         public void SendNicknameToWindow(string nickname, HorizontalAlignment align = HorizontalAlignment.Left)
         {
@@ -106,10 +131,23 @@ namespace UserClient
         {
             if (InputField.Text == "") return;
 
-            mClient.SendMessage(InputField.Text);
+
+            if(mSelectedClient == "")
+            {
+                mClient.SendMessage(InputField.Text);
+            }
+            else
+            {
+                mClient.SendPrivateMessage(mSelectedClient, InputField.Text);
+                
+                ClientList.SelectedItem = null;
+            }
+            
+
+
             InputField.Text = "";
 
-            if(mLastNicknameRecieved != "You") mLastNicknameRecieved = "";
+            if(mLastNicknameRecieved != "You" && mLastNicknameRecieved != "You -> " + mSelectedClient) mLastNicknameRecieved = "";
         }
 
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)
@@ -127,8 +165,19 @@ namespace UserClient
             nicknameWindow.ShowDialog();
         }
 
+        //TODO: Implement Connect feature
         private void ConnectButton_Click(object sender, RoutedEventArgs e)
         {
+
+        }
+
+        private void ClientList_Selected(object sender, RoutedEventArgs e)
+        {
+            var item = ClientList.SelectedItem as ListViewItem;
+
+            if (item == null) return;
+
+            mSelectedClient = (string)item.Content;
 
         }
     }

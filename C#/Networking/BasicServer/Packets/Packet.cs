@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace Packets
 {
@@ -10,7 +11,8 @@ namespace Packets
         PrivateMessage,
         NewNickname,
         Disconnect,
-        NicknameWindow
+        NicknameWindow,
+        Login
     }
 
     /// <summary>
@@ -30,8 +32,26 @@ namespace Packets
         }
     }
 
+
+    [Serializable]
+    public class PrivateMessagePacket : Packet
+    {
+        public string mMessage;
+        public string mSender;
+        public string mReciever;
+
+        public PrivateMessagePacket(string sender, string reciever, string message)
+        {
+            mSender = sender;
+            mReciever = reciever;
+            mMessage = message;
+
+            mPacketType = PacketType.PrivateMessage;
+        }
+    }
+
     /// <summary>
-    /// Group Char Packet system, this stores the message and the sender of the message so the form can add there nickname to the message
+    /// Group Chat Packet system, this stores the message and the sender of the message so the form can add there nickname to the message
     /// </summary>
     [Serializable]
     public class ChatMessagePacket : Packet
@@ -113,5 +133,16 @@ namespace Packets
         }
     }
 
+    [Serializable]
+    public class LoginPacket : Packet
+    {
+        public IPEndPoint mEndPoint;
+        
+        public LoginPacket(IPEndPoint endPoint)
+        {
+            mEndPoint = endPoint;
+            mPacketType = PacketType.Login;
+        }
+    }
 
 }

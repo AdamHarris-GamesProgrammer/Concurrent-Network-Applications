@@ -5,6 +5,8 @@ using System.Collections.Concurrent;
 using System.Threading;
 using Packets;
 using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
 
 namespace BasicServer
 {
@@ -14,10 +16,15 @@ namespace BasicServer
 
         private ConcurrentDictionary<int, Client> mClients;
 
+        private UdpClient mUdpListener;
+
+
         public Server(string ipAddress, int port)
         {
             IPAddress ip = IPAddress.Parse(ipAddress);
             mTcpListener = new TcpListener(ip, port);
+
+            mUdpListener = new UdpClient(port);
         }
 
         public void Start()
@@ -45,12 +52,47 @@ namespace BasicServer
 
                 Console.WriteLine("Accepted Connection");
 
-                Thread thread = new Thread(() => { ClientMethod(index); });
+                Thread tcpThread = new Thread(() => { ClientMethod(index); });
+                Thread udpThread = new Thread(UdpListen);
 
-                thread.Start();
+                tcpThread.Start();
+                udpThread.Start();
             }
 
         }
+
+        private void UdpListen()
+        {
+            try
+            {
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+
+                while (true)
+                {
+                    byte[] buffer = mUdpListener.Receive(ref endPoint);
+
+                    MemoryStream stream = new MemoryStream(buffer);
+
+                    BinaryFormatter binaryFormatter = new BinaryFormatter();
+
+                    Packet recievedPackage = binaryFormatter.Deserialize(stream) as Packet;
+
+                    foreach(Client c in mClients.Values)
+                    {
+                        if(endPoint.ToString() == c.mIpEndPoint.ToString())
+                        {
+                            //Handle Packet here
+                        }
+                    }
+                }
+            }
+            catch (SocketException e)
+            {
+                Console.WriteLine("Client UDP Read Method Exception: " + e.Message);
+            }
+        }
+
+        
 
         public void Stop()
         {
@@ -58,47 +100,63 @@ namespace BasicServer
             Console.WriteLine("Closed Connection");
         }
 
-        private void SendToOthers(Client currentClient, Packet packet)
+        private void TcpSendToOthers(Client currentClient, Packet packet)
         {
             foreach (Client cli in mClients.Values)
             {
                 //Sends packet to all people who are not the current client, this is because the current client already has a local copy
                 if (cli != currentClient)
                 {
-                    cli.Send(packet);
+                    cli.TcpSend(packet);
                 }
             }
         }
 
-        private void SendToAll(Packet packet)
+        private void TcpSendToAll(Packet packet)
         {
             foreach (Client cli in mClients.Values)
             {
-                cli.Send(packet);
+                cli.TcpSend(packet);
+            }
+        }
+
+        private void TcpSendToSelected(Packet packet)
+        {
+            PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)packet;
+
+            string reciever = privateMessagePacket.mReciever;
+
+            foreach(Client cli in mClients.Values)
+            {
+                if(cli.Nickname == reciever)
+                {
+                    cli.TcpSend(packet);
+                    break;
+                }
             }
         }
 
         private void ClientMethod(int index)
         {
-            Packet recievedMessage;
+            Packet recievedPacket;
 
             Client currentClient = mClients[index];
 
-            while ((recievedMessage = currentClient.Read()) != null)
+            while ((recievedPacket = currentClient.TcpRead()) != null)
             {
 
-                switch (recievedMessage.mPacketType)
+                switch (recievedPacket.mPacketType)
                 {
                     case PacketType.ChatMessage:
-                        ChatMessagePacket chatPacket = (ChatMessagePacket)recievedMessage;
-                        SendToOthers(currentClient, chatPacket);
+                        ChatMessagePacket chatPacket = (ChatMessagePacket)recievedPacket;
+                        TcpSendToOthers(currentClient, chatPacket);
                         break;
                     case PacketType.Disconnect:
-                        DisconnectPacket disconnectPacket = (DisconnectPacket)recievedMessage;
-                        SendToOthers(currentClient, disconnectPacket);
+                        DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
+                        TcpSendToOthers(currentClient, disconnectPacket);
                         break;
                     case PacketType.NewNickname:
-                        SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedMessage;
+                        SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedPacket;
 
                         List<string> names = new List<string>();
 
@@ -116,8 +174,15 @@ namespace BasicServer
 
                         break;
                     case PacketType.PrivateMessage:
+                        PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)recievedPacket;
+                        TcpSendToSelected(privateMessagePacket);
+
                         break;
                     case PacketType.Empty:
+                        break;
+                    case PacketType.Login:
+                        LoginPacket loginPacket = (LoginPacket)recievedPacket;
+                        currentClient.mIpEndPoint = loginPacket.mEndPoint;
                         break;
                     default:
                         break;
@@ -141,7 +206,7 @@ namespace BasicServer
         {
             names.Sort();
             NicknameWindowPacket nicknameWindowPacket = new NicknameWindowPacket(names);
-            SendToAll(nicknameWindowPacket);
+            TcpSendToAll(nicknameWindowPacket);
         }
 
     }

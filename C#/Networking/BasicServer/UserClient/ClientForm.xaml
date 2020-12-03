@@ -25,7 +25,7 @@
             <!-- Client List -->
             <Border BorderBrush="Black"  Grid.Row="1">
                 <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                    <ListView x:Name="ClientList"/>
+                    <ListView x:Name="ClientList" SelectionChanged="ClientList_Selected"/>
                 </ScrollViewer>
             </Border>
 
@@ -56,10 +56,8 @@
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
                                 <ListView x:Name="MessageWnd" IsEnabled="False"/>
                             </ScrollViewer>
-
                         </Border>
                     </TabItem>
-                    <TabItem Header="Adam"/>
                 </TabControl>
 
                 <Grid Margin="0,3,0,3" Grid.Row="1">

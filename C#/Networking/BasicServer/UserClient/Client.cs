@@ -1,6 +1,7 @@
 ﻿using Packets;
 using System;
 using System.IO;
+using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
 using System.Text;
@@ -10,12 +11,15 @@ namespace UserClient
 {
     public class Client
     {
-        private TcpClient mTcpClient;
         private NetworkStream mStream;
         private BinaryWriter mWriter;
         private BinaryReader mReader;
         private BinaryFormatter mFormatter;
         private ClientForm mClientForm;
+
+        private UdpClient mUdpClient;
+        private TcpClient mTcpClient;
+
 
 
         bool mIsConnected = false;
@@ -58,6 +62,9 @@ namespace UserClient
                 mReader = new BinaryReader(mStream, Encoding.UTF8);
                 mFormatter = new BinaryFormatter();
 
+                mUdpClient = new UdpClient();
+                mUdpClient.Connect(ipAddress, port);
+
                 mIsConnected = true;
 
                 return true;
@@ -73,11 +80,16 @@ namespace UserClient
         {
             mClientForm = new ClientForm(this);
 
-            Thread thread = new Thread(ProcessServerResponse);
+            Thread tcpThread = new Thread(TcpProcessServerResponse);
+            Thread udpThread = new Thread(UdpProcessServerResponse);
+
 
             mClientForm.SetWindowTitle(Nickname);
 
-            thread.Start();
+            tcpThread.Start();
+            udpThread.Start();
+
+            Login();
 
             mClientForm.ShowDialog();
 
@@ -85,6 +97,62 @@ namespace UserClient
             DisconnectFromServer();
         }
 
+        public void Login()
+        {
+            LoginPacket loginPacket = new LoginPacket((IPEndPoint)mUdpClient.Client.LocalEndPoint);
+
+
+        }
+
+        public void UdpSendMessage(Packet packet)
+        {
+            MemoryStream msgStream = new MemoryStream();
+            mFormatter.Serialize(msgStream, packet);
+            byte[] buffer = msgStream.GetBuffer();
+            mUdpClient.Send(buffer, buffer.Length);
+        }
+
+        public void UdpProcessServerResponse()
+        {
+            try
+            {
+                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+
+                while (true)
+                {
+                    byte[] buffer = mUdpClient.Receive(ref endPoint);
+
+                    MemoryStream stream = new MemoryStream(buffer);
+
+                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
+
+                    switch (recievedPackage.mPacketType)
+                    {
+                        case PacketType.Empty:
+                            break;
+                        case PacketType.ChatMessage:
+                            break;
+                        case PacketType.PrivateMessage:
+                            break;
+                        case PacketType.NewNickname:
+                            break;
+                        case PacketType.Disconnect:
+                            break;
+                        case PacketType.NicknameWindow:
+                            break;
+                        case PacketType.Login:
+                            break;
+                        default:
+                            break;
+
+                    }
+                }
+            }
+            catch(SocketException e)
+            {
+                Console.WriteLine("Client UDP Read Method Exception: " + e.Message);
+            }
+        }
 
 
         public void DisconnectFromServer()
@@ -109,6 +177,19 @@ namespace UserClient
             SerializePacket(messagePacket);
         }
 
+
+        public void SendPrivateMessage(string reciever, string message)
+        {
+            //Updates local chat window
+            mClientForm.SendNicknameToWindow("You -> " + reciever, System.Windows.HorizontalAlignment.Right);
+            mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
+
+            //Sends private message over network
+            PrivateMessagePacket privateMessagePacket = new PrivateMessagePacket(mNickname, reciever, message);
+            SerializePacket(privateMessagePacket);
+        }
+
+
         private void SerializePacket(Packet packetToSerialize)
         {
             MemoryStream msgStream = new MemoryStream();
@@ -119,7 +200,7 @@ namespace UserClient
             mWriter.Flush();
         }
 
-        private void ProcessServerResponse()
+        private void TcpProcessServerResponse()
         {
             int numberOfBytes;
 
@@ -143,6 +224,11 @@ namespace UserClient
                             mClientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
                             break;
                         case PacketType.PrivateMessage:
+                            //TODO: Add in private message logic
+                            PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)recievedPackage;
+                            mClientForm.SendNicknameToWindow("PM From " + privateMessagePacket.mSender, System.Windows.HorizontalAlignment.Left);
+                            mClientForm.SendMessageToWindow(privateMessagePacket.mMessage, System.Windows.HorizontalAlignment.Left);
+
                             break;
                         case PacketType.Empty:
                             break;
