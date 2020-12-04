@@ -7,6 +7,7 @@ using Packets;
 using System.Collections.Generic;
 using System.IO;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
 
 namespace BasicServer
 {
@@ -17,6 +18,8 @@ namespace BasicServer
         private ConcurrentDictionary<int, Client> mClients;
 
         private UdpClient mUdpListener;
+
+
 
 
         public Server(string ipAddress, int port)
@@ -71,34 +74,13 @@ namespace BasicServer
                 {
                     byte[] buffer = mUdpListener.Receive(ref endPoint);
 
-                    MemoryStream stream = new MemoryStream(buffer);
-
-                    BinaryFormatter binaryFormatter = new BinaryFormatter();
-
-                    Packet recievedPackage = binaryFormatter.Deserialize(stream) as Packet;
-
                     foreach(Client c in mClients.Values)
                     {
                         if(endPoint.ToString() != c.mIpEndPoint.ToString())
                         {
-                            //Handle Packet here
-
                             mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
                         }
                         
-                    }
-
-                    switch (recievedPackage.mPacketType)
-                    {
-                        case PacketType.ChatMessage:
-                            ChatMessagePacket chatMessagePacket = (ChatMessagePacket)recievedPackage;
-
-                            string message = chatMessagePacket.mMessage;
-
-                            Console.WriteLine(message);
-
-
-                            break;
                     }
                 }
             }
@@ -108,7 +90,6 @@ namespace BasicServer
             }
         }
 
-        
 
         public void Stop()
         {
@@ -196,9 +177,15 @@ namespace BasicServer
                         break;
                     case PacketType.Empty:
                         break;
+                    case PacketType.Encrypted:
+                        EncryptedMessage encryptedMessage = (EncryptedMessage)recievedPacket;
+                        TcpSendToOthers(currentClient, encryptedMessage);
+                        break;
+
                     case PacketType.Login:
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
                         currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
+                        currentClient.Login(loginPacket.mPublicKey);
                         break;
                     default:
                         break;
@@ -224,6 +211,9 @@ namespace BasicServer
             NicknameWindowPacket nicknameWindowPacket = new NicknameWindowPacket(names);
             TcpSendToAll(nicknameWindowPacket);
         }
+
+
+
 
     }
 }

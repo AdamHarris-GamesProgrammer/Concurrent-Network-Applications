@@ -24,16 +24,6 @@ namespace UserClient
             mClient = client;
 
 
-            //mMessageWindows = new List<TabItem>();
-            //MessageTabs.ItemsSource = mMessageWindows;
-
-            //var item = new TabItem();
-
-            //item.Header = "Group Chat";
-            //mMessageWindows.Add(item);
-
-
-
             ChangeNickname nicknameWindow = new ChangeNickname(mClient);
             nicknameWindow.ShowDialog();
         }

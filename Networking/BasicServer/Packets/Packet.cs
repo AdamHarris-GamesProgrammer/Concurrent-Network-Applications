@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using System.Security.Cryptography; 
 
 namespace Packets
 {
@@ -12,7 +13,8 @@ namespace Packets
         NewNickname,
         Disconnect,
         NicknameWindow,
-        Login
+        Login,
+        Encrypted
     }
 
     /// <summary>
@@ -137,12 +139,27 @@ namespace Packets
     public class LoginPacket : Packet
     {
         public string mEndPoint;
+
+        [NonSerialized]
+        public RSAParameters mPublicKey;
         
-        public LoginPacket(string endPoint)
+        public LoginPacket(string endPoint, RSAParameters key)
         {
             mEndPoint = endPoint;
+            mPublicKey = key;
             mPacketType = PacketType.Login;
         }
     }
 
+    [Serializable]
+    public class EncryptedMessage : Packet
+    {
+        public byte[] mBytes;
+
+        public EncryptedMessage(byte[] bytes)
+        {
+            mBytes = bytes;
+            mPacketType = PacketType.Encrypted;
+        }
+    }
 }

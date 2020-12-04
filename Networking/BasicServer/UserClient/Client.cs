@@ -4,6 +4,7 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
 
@@ -20,7 +21,10 @@ namespace UserClient
         private UdpClient mUdpClient;
         private TcpClient mTcpClient;
 
-
+        private RSACryptoServiceProvider mRSAProvider;
+        private RSAParameters mPublicKey;
+        private RSAParameters mPrivateKey;
+        private RSAParameters mServerKey;
 
         bool mIsConnected = false;
 
@@ -101,7 +105,7 @@ namespace UserClient
 
         public void Login()
         {
-            LoginPacket loginPacket = new LoginPacket(mUdpClient.Client.LocalEndPoint.ToString());
+            LoginPacket loginPacket = new LoginPacket(mUdpClient.Client.LocalEndPoint.ToString(), mPublicKey);
             SerializePacket(loginPacket);
 
         }
@@ -179,8 +183,13 @@ namespace UserClient
 
             //Send message packet to network
             ChatMessagePacket messagePacket = new ChatMessagePacket(Nickname, message);
-            SerializePacket(messagePacket);
-            UdpSendMessage(messagePacket);
+
+            EncryptString(message);
+
+            //EncryptedMessage encryptedMessage = new EncryptedMessage();
+            //SerializePacket(encryptedMessage);
+            //SerializePacket(messagePacket);
+            //UdpSendMessage(messagePacket);
 
         }
 
@@ -248,6 +257,11 @@ namespace UserClient
                             string[] names = nicknameWindowPacket.mNames.ToArray();
                             mClientForm.UpdateClientListWindow(names);
                             break;
+                        case PacketType.Encrypted:
+                            EncryptedMessage encryptedMessage = (EncryptedMessage)recievedPackage;
+                            string msg = DecryptString(encryptedMessage.mBytes);
+                            mClientForm.SendMessageToWindow(msg, System.Windows.HorizontalAlignment.Left);
+                            break;
                         default:
                             break;
                     }
@@ -259,5 +273,41 @@ namespace UserClient
             mTcpClient.Close();
         }
 
+
+        private byte[] Encrypt(byte[] data)
+        {
+            lock (mRSAProvider)
+            {
+                mRSAProvider.ImportParameters(mServerKey);
+                //mRSAProvider.ImportParameters(mClientKey);
+
+                return mRSAProvider.Encrypt(data, true);
+            }
+        }
+
+        private byte[] Decrypt(byte[] data)
+        {
+            lock (mRSAProvider)
+            {
+                mRSAProvider.ImportParameters(mPrivateKey);
+                //mRSAProvider.ImportParameters(mClientKey);
+
+                return mRSAProvider.Decrypt(data, true);
+            }
+        }
+
+        private byte[] EncryptString(string message)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(message);
+            EncryptedMessage messagePacket = new EncryptedMessage(bytes);
+            SerializePacket(messagePacket);
+
+            return bytes;
+        }
+
+        private string DecryptString(byte[] message)
+        {
+            return Encoding.UTF8.GetString(message);
+        }
     }
 }

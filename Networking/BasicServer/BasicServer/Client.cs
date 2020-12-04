@@ -5,7 +5,9 @@ using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
+using System.Security.Cryptography;
 using System.Text;
+using System.Text.Unicode;
 
 namespace BasicServer
 {
@@ -16,6 +18,12 @@ namespace BasicServer
         private BinaryReader mReader;
         private BinaryWriter mWriter;
         private BinaryFormatter mFormatter;
+
+        private RSACryptoServiceProvider mRSAProvider;
+        private RSAParameters mPublicKey;
+        private RSAParameters mPrivateKey;
+        private RSAParameters mClientKey;
+        private RSAParameters mServerKey;
 
         private object mReadLock;
         private object mWriteLock;
@@ -41,6 +49,11 @@ namespace BasicServer
             mFormatter = new BinaryFormatter();
 
             Nickname = "Username";
+
+            mRSAProvider = new RSACryptoServiceProvider(1024);
+            mPublicKey = mRSAProvider.ExportParameters(false);
+            mPrivateKey = mRSAProvider.ExportParameters(true);
+
         }
 
         public void Close()
@@ -50,6 +63,15 @@ namespace BasicServer
             mReader.Close();
             mWriter.Close();
             mSocket.Close();
+        }
+
+        public void Login(RSAParameters clientKey)
+        {
+            //set name end point and client key
+
+            mPublicKey = clientKey;
+
+            //Tcp Send the server key packet
         }
 
         public Packet TcpRead()
@@ -64,7 +86,6 @@ namespace BasicServer
                     MemoryStream stream = new MemoryStream(buffer);
 
                     return mFormatter.Deserialize(stream) as Packet;
-
                 }
                 else
                 {
@@ -86,6 +107,41 @@ namespace BasicServer
                 mWriter.Write(bufffer);
                 mWriter.Flush();
             }
+        }
+        private byte[] Encrypt(byte[] data)
+        {
+            lock (mRSAProvider)
+            {
+                mRSAProvider.ImportParameters(mServerKey);
+                //mRSAProvider.ImportParameters(mClientKey);
+
+                return mRSAProvider.Encrypt(data, true);
+            }
+        }
+
+        private byte[] Decrypt(byte[] data)
+        {
+            lock (mRSAProvider)
+            {
+                mRSAProvider.ImportParameters(mPrivateKey);
+                //mRSAProvider.ImportParameters(mClientKey);
+
+                return mRSAProvider.Decrypt(data, true);
+            }
+        }
+
+        private byte[] EncryptString(string message)
+        {
+            byte[] bytes = Encoding.UTF8.GetBytes(message);
+            EncryptedMessage messagePacket = new EncryptedMessage(bytes);
+            TcpSend(messagePacket);
+
+            return bytes;
+        }
+
+        private string DecryptString(byte[] message)
+        {
+            return Encoding.UTF8.GetString(message);
         }
     }
 }
