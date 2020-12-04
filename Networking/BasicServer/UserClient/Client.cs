@@ -224,7 +224,6 @@ namespace UserClient
                             mClientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
                             break;
                         case PacketType.PrivateMessage:
-                            //TODO: Add in private message logic
                             PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)recievedPackage;
                             mClientForm.SendNicknameToWindow("PM From " + privateMessagePacket.mSender, System.Windows.HorizontalAlignment.Left);
                             mClientForm.SendMessageToWindow(privateMessagePacket.mMessage, System.Windows.HorizontalAlignment.Left);
