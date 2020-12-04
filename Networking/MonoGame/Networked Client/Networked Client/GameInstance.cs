@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Packets;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -27,9 +28,16 @@ namespace NetworkedClient
 
         bool mIsConnected;
         
-        Texture2D ballTexture;
-        Vector2 ballPosition;
+        Ball player;
         float ballSpeed;
+
+        List<Ball> otherPlayers;
+
+        struct Ball
+        {
+            public Texture2D Texture;
+            public Vector2 Position;
+        }
 
 
         public GameInstance()
@@ -43,7 +51,7 @@ namespace NetworkedClient
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-            ballPosition = new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
+            player.Position = new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
             ballSpeed = 100.0f;
 
 
@@ -54,8 +62,8 @@ namespace NetworkedClient
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-
-            ballTexture = Content.Load<Texture2D>("ball");
+            
+            player.Texture = Content.Load<Texture2D>("ball");
             // TODO: use this.Content to load your game content here
         }
 
@@ -71,11 +79,11 @@ namespace NetworkedClient
 
 
 
-            if (kstate.IsKeyDown(Keys.Up)) ballPosition.Y -= ballSpeed * deltaTime;
-            else if (kstate.IsKeyDown(Keys.Down)) ballPosition.Y += ballSpeed * deltaTime;
+            if (kstate.IsKeyDown(Keys.Up)) player.Position.Y -= ballSpeed * deltaTime;
+            else if (kstate.IsKeyDown(Keys.Down)) player.Position.Y += ballSpeed * deltaTime;
 
-            if (kstate.IsKeyDown(Keys.Left)) ballPosition.X -= ballSpeed * deltaTime;
-            else if (kstate.IsKeyDown(Keys.Right)) ballPosition.X += ballSpeed * deltaTime;
+            if (kstate.IsKeyDown(Keys.Left)) player.Position.X -= ballSpeed * deltaTime;
+            else if (kstate.IsKeyDown(Keys.Right)) player.Position.X += ballSpeed * deltaTime;
 
 
 
@@ -87,7 +95,7 @@ namespace NetworkedClient
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin();
-            _spriteBatch.Draw(ballTexture, ballPosition, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+            _spriteBatch.Draw(player.Texture, player.Position, null, Color.White, 0.0f, new Vector2(player.Texture.Width / 2, player.Texture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
             _spriteBatch.End();
 
 

@@ -84,6 +84,19 @@ namespace BasicServer
                             //Handle Packet here
                         }
                     }
+
+                    switch (recievedPackage.mPacketType)
+                    {
+                        case PacketType.ChatMessage:
+                            ChatMessagePacket chatMessagePacket = (ChatMessagePacket)recievedPackage;
+
+                            string message = chatMessagePacket.mMessage;
+
+                            Console.WriteLine(message);
+
+
+                            break;
+                    }
                 }
             }
             catch (SocketException e)
@@ -182,7 +195,7 @@ namespace BasicServer
                         break;
                     case PacketType.Login:
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
-                        currentClient.mIpEndPoint = loginPacket.mEndPoint;
+                        currentClient.mIpEndPoint = (IPEndPoint)loginPacket.mEndPoint;
                         break;
                     default:
                         break;

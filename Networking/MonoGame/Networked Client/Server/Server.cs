@@ -91,6 +91,7 @@ namespace Server
                                 case PacketType.Connect:
                                     break;
                                 case PacketType.Position:
+                                    
                                     break;
                                 
                                 default:

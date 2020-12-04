@@ -86,10 +86,12 @@ namespace UserClient
 
             mClientForm.SetWindowTitle(Nickname);
 
+
+            Login();
+
             tcpThread.Start();
             udpThread.Start();
 
-            Login();
 
             mClientForm.ShowDialog();
 
@@ -100,7 +102,7 @@ namespace UserClient
         public void Login()
         {
             LoginPacket loginPacket = new LoginPacket((IPEndPoint)mUdpClient.Client.LocalEndPoint);
-
+            SerializePacket(loginPacket);
 
         }
 
@@ -175,6 +177,8 @@ namespace UserClient
             //Send message packet to network
             ChatMessagePacket messagePacket = new ChatMessagePacket(Nickname, message);
             SerializePacket(messagePacket);
+            UdpSendMessage(messagePacket);
+
         }
 
 

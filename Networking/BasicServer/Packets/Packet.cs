@@ -12,8 +12,7 @@ namespace Packets
         NewNickname,
         Disconnect,
         NicknameWindow,
-        Login,
-        RPSBeginGame
+        Login
     }
 
     /// <summary>
