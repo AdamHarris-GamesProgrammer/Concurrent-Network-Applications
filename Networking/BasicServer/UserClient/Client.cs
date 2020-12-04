@@ -101,7 +101,7 @@ namespace UserClient
 
         public void Login()
         {
-            LoginPacket loginPacket = new LoginPacket((IPEndPoint)mUdpClient.Client.LocalEndPoint);
+            LoginPacket loginPacket = new LoginPacket(mUdpClient.Client.LocalEndPoint.ToString());
             SerializePacket(loginPacket);
 
         }
@@ -133,6 +133,9 @@ namespace UserClient
                         case PacketType.Empty:
                             break;
                         case PacketType.ChatMessage:
+                            ChatMessagePacket chatPacket = (ChatMessagePacket)recievedPackage;
+                            mClientForm.SendNicknameToWindow(chatPacket.mSender);
+                            mClientForm.SendMessageToWindow("Cheeky bit of UDP: " + chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
                             break;
                         case PacketType.PrivateMessage:
                             break;

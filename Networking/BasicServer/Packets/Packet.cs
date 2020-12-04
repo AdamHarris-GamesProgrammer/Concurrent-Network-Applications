@@ -136,9 +136,9 @@ namespace Packets
     [Serializable]
     public class LoginPacket : Packet
     {
-        public IPEndPoint mEndPoint;
+        public string mEndPoint;
         
-        public LoginPacket(IPEndPoint endPoint)
+        public LoginPacket(string endPoint)
         {
             mEndPoint = endPoint;
             mPacketType = PacketType.Login;

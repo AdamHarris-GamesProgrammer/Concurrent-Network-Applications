@@ -79,10 +79,13 @@ namespace BasicServer
 
                     foreach(Client c in mClients.Values)
                     {
-                        if(endPoint.ToString() == c.mIpEndPoint.ToString())
+                        if(endPoint.ToString() != c.mIpEndPoint.ToString())
                         {
                             //Handle Packet here
+
+                            mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
                         }
+                        
                     }
 
                     switch (recievedPackage.mPacketType)
@@ -195,7 +198,7 @@ namespace BasicServer
                         break;
                     case PacketType.Login:
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
-                        currentClient.mIpEndPoint = (IPEndPoint)loginPacket.mEndPoint;
+                        currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
                         break;
                     default:
                         break;
