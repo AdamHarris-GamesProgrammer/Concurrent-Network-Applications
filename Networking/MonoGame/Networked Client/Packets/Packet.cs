@@ -8,7 +8,8 @@ namespace Packets
         Empty,
         Connect,
         Position,
-        Login
+        Login,
+        NewPlayer
     }
 
     [Serializable]
@@ -39,24 +40,37 @@ namespace Packets
     {
         public float xPos;
         public float yPos;
-        public float zPos;
+        public string mId;
 
-        public PositionPacket(float x, float y, float z)
+        public PositionPacket(string id, float x, float y)
         {
+            mId = id;
             xPos = x;
             yPos = y;
-            zPos = z;
-
             mPacketType = PacketType.Position;
         }
     }
 
     [Serializable]
+    public class NewPlayer : Packet
+    {
+        public string mId;
+        
+        public NewPlayer(string id)
+        {
+            mId = id;
+
+            mPacketType = PacketType.NewPlayer;
+        }
+
+    }
+
+    [Serializable]
     public class LoginPacket : Packet
     {
-        public IPEndPoint mEndPoint;
+        public string mEndPoint;
 
-        public LoginPacket(IPEndPoint endPoint)
+        public LoginPacket(string endPoint)
         {
             mEndPoint = endPoint;
             mPacketType = PacketType.Login;

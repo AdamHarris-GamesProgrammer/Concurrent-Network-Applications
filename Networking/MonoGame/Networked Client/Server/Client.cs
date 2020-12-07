@@ -57,7 +57,6 @@ namespace Server
                     MemoryStream stream = new MemoryStream(buffer);
 
                     return mFormatter.Deserialize(stream) as Packet;
-
                 }
                 else
                 {

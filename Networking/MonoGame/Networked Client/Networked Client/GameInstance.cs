@@ -29,16 +29,29 @@ namespace NetworkedClient
         bool mIsConnected;
         
         Ball player;
+        Texture2D ballTexture;
         float ballSpeed;
 
-        List<Ball> otherPlayers;
+        //List<Ball> otherPlayers;
 
-        struct Ball
+        Dictionary<string, Ball> otherPlayers;
+
+        public struct Ball
         {
-            public Texture2D Texture;
+            public Color PlayerColor;
             public Vector2 Position;
         }
 
+
+        public void AddPlayer(string uid)
+        {
+            Ball newBall = new Ball();
+
+            newBall.PlayerColor = Color.White;
+            newBall.Position = new Vector2(100, 100);
+
+            otherPlayers.Add(uid, newBall);
+        }
 
         public GameInstance()
         {
@@ -46,6 +59,8 @@ namespace NetworkedClient
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
             mTcpClient = new TcpClient();
+
+            otherPlayers = new Dictionary<string, Ball>();
         }
 
         protected override void Initialize()
@@ -62,8 +77,9 @@ namespace NetworkedClient
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
-            
-            player.Texture = Content.Load<Texture2D>("ball");
+
+            ballTexture = Content.Load<Texture2D>("ball");
+
             // TODO: use this.Content to load your game content here
         }
 
@@ -77,7 +93,7 @@ namespace NetworkedClient
 
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-
+            
 
             if (kstate.IsKeyDown(Keys.Up)) player.Position.Y -= ballSpeed * deltaTime;
             else if (kstate.IsKeyDown(Keys.Down)) player.Position.Y += ballSpeed * deltaTime;
@@ -95,7 +111,13 @@ namespace NetworkedClient
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin();
-            _spriteBatch.Draw(player.Texture, player.Position, null, Color.White, 0.0f, new Vector2(player.Texture.Width / 2, player.Texture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+            _spriteBatch.Draw(ballTexture, player.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+
+            foreach(Ball ball in otherPlayers.Values)
+            {
+                _spriteBatch.Draw(ballTexture, ball.Position, null, ball.PlayerColor, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+            }
+
             _spriteBatch.End();
 
 
@@ -116,8 +138,7 @@ namespace NetworkedClient
 
                 mIsConnected = true;
 
-                LoginPacket loginPacket = new LoginPacket((IPEndPoint)mUdpClient.Client.LocalEndPoint);
-                SerializePacket(loginPacket);
+
 
 
                 return true;
@@ -131,14 +152,19 @@ namespace NetworkedClient
 
         public void Run()
         {
-            base.Run();
+            
 
 
             Thread udpThread = new Thread(UdpProcessServerResponse);
+            Thread tcpThread = new Thread(TcpProcessServerResponse);
 
 
+            LoginPacket loginPacket = new LoginPacket(mUdpClient.Client.LocalEndPoint.ToString());
+            SerializePacket(loginPacket);
 
             udpThread.Start();
+            tcpThread.Start();
+            base.Run();
         }
 
 
@@ -180,6 +206,41 @@ namespace NetworkedClient
             }
         }
 
+        private void TcpProcessServerResponse()
+        {
+            int numberOfBytes;
+
+            while (mIsConnected)
+            {
+                if ((numberOfBytes = mReader.ReadInt32()) != 0)
+                {
+                    if (!mIsConnected) break;
+
+                    byte[] buffer = mReader.ReadBytes(numberOfBytes);
+
+                    MemoryStream stream = new MemoryStream(buffer);
+
+                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
+
+                    switch (recievedPackage.mPacketType)
+                    {
+                        case PacketType.NewPlayer:
+                            NewPlayer newPlayer = (NewPlayer)recievedPackage;
+
+                            AddPlayer(newPlayer.mId);
+                            break;
+
+                        
+                        default:
+                            break;
+                    }
+                }
+            }
+
+            mReader.Close();
+            mWriter.Close();
+            mTcpClient.Close();
+        }
 
         private void SerializePacket(Packet packetToSerialize)
         {

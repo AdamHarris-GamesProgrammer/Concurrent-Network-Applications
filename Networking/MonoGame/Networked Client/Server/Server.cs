@@ -86,10 +86,6 @@ namespace Server
                         {
                             switch (recievedPackage.mPacketType)
                             {
-                                case PacketType.Empty:
-                                    break;
-                                case PacketType.Connect:
-                                    break;
                                 case PacketType.Position:
                                     
                                     break;
@@ -131,7 +127,11 @@ namespace Server
                         break;
                     case PacketType.Login:
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
-                        currentClient.mIpEndPoint = loginPacket.mEndPoint;
+                        currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
+
+                        NewPlayer newPlayer = new NewPlayer(GenerateUID());
+                        TcpSendToOthers(currentClient, newPlayer);
+
                         break;
                     default:
                         break;
@@ -149,6 +149,33 @@ namespace Server
             {
                 Stop();
             }
+        }
+
+        private void TcpSendToOthers(Client currentClient, Packet packet)
+        {
+            foreach (Client cli in mClients.Values)
+            {
+                //Sends packet to all people who are not the current client, this is because the current client already has a local copy
+                if (cli != currentClient)
+                {
+                    cli.TcpSend(packet);
+                }
+            }
+        }
+
+        private void TcpSendToAll(Packet packet)
+        {
+            foreach (Client cli in mClients.Values)
+            {
+                cli.TcpSend(packet);
+            }
+        }
+
+        private string GenerateUID()
+        {
+            Guid g = Guid.NewGuid();
+
+            return g.ToString();
         }
     }
 }
