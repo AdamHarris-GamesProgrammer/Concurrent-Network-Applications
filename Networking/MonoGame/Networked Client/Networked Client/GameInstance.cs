@@ -5,6 +5,7 @@ using Packets;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Runtime.Serialization.Formatters.Binary;
@@ -128,7 +129,7 @@ namespace NetworkedClient
             _spriteBatch.Begin();
             _spriteBatch.Draw(ballTexture, player.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
 
-            foreach(Ball ball in otherPlayers.Values)
+            foreach(Ball ball in otherPlayers.Values.ToList())
             {
                 _spriteBatch.Draw(ballTexture, ball.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
             }
