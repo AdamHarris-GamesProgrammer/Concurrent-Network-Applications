@@ -138,13 +138,16 @@ namespace Server
                         GUID guidPacket = new GUID(latestPlayer);
                         currentClient.TcpSend(guidPacket);
                         Players playersPacket = new Players(mClients.Keys);
-                        currentClient.TcpSend(playersPacket);
-
+                        TcpSendToAll(playersPacket);
 
                         NewPlayer newPlayer = new NewPlayer(latestPlayer);
                         TcpSendToOthers(currentClient, newPlayer);
 
+                        break;
 
+                    case PacketType.Position:
+                        PositionPacket positionPacket = (PositionPacket)recievedPacket;
+                        TcpSendToAll(positionPacket);
 
                         break;
                     default:
