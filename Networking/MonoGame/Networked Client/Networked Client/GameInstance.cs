@@ -32,8 +32,6 @@ namespace NetworkedClient
         Texture2D ballTexture;
         float ballSpeed;
 
-        //List<Ball> otherPlayers;
-
         Dictionary<string, Ball> otherPlayers;
 
         public struct Ball
@@ -230,6 +228,13 @@ namespace NetworkedClient
                             AddPlayer(newPlayer.mId);
                             break;
 
+                        case PacketType.Players:
+                            Players players = (Players)recievedPackage;
+                            foreach(string id in players.mIds)
+                            {
+                                AddPlayer(id);
+                            }
+                            break;
                         
                         default:
                             break;

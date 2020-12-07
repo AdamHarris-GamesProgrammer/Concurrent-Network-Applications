@@ -14,11 +14,15 @@ namespace Server
     {
         private TcpListener mTcpListener;
 
-        private ConcurrentDictionary<int, Client> mClients;
+        private ConcurrentDictionary<string, Client> mClients;
 
         private UdpClient mUdpListener;
 
         static int playerCount = 0;
+
+        string latestPlayer;
+
+
 
         public Server(string ipAddress, int port)
         {
@@ -30,7 +34,7 @@ namespace Server
 
         public void Start()
         {
-            mClients = new ConcurrentDictionary<int, Client>();
+            mClients = new ConcurrentDictionary<string, Client>();
 
             mTcpListener.Start();
 
@@ -47,7 +51,9 @@ namespace Server
 
                 Client client = new Client(socket);
 
-                mClients.TryAdd(index, client);
+                latestPlayer = GenerateUID();
+
+                mClients.TryAdd(latestPlayer, client);
 
 
 
@@ -55,7 +61,7 @@ namespace Server
 
                 playerCount++;
 
-                Thread tcpThread = new Thread(() => { ClientMethod(index); });
+                Thread tcpThread = new Thread(() => { ClientMethod(latestPlayer); });
                 Thread udpThread = new Thread(UdpListen);
 
                 tcpThread.Start();
@@ -111,7 +117,7 @@ namespace Server
         }
 
 
-        private void ClientMethod(int index)
+        private void ClientMethod(string index)
         {
             Packet recievedPacket;
 
@@ -129,8 +135,16 @@ namespace Server
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
                         currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
 
-                        NewPlayer newPlayer = new NewPlayer(GenerateUID());
+                        GUID guidPacket = new GUID(latestPlayer);
+                        currentClient.TcpSend(guidPacket);
+                        Players playersPacket = new Players(mClients.Keys);
+                        currentClient.TcpSend(playersPacket);
+
+
+                        NewPlayer newPlayer = new NewPlayer(latestPlayer);
                         TcpSendToOthers(currentClient, newPlayer);
+
+
 
                         break;
                     default:
