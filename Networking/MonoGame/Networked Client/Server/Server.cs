@@ -114,8 +114,9 @@ namespace Server
 
         public void Stop()
         {
+            mTcpListener.Stop();
+            Console.WriteLine("Closed Connection");
         }
-
 
         private void ClientMethod(string index)
         {

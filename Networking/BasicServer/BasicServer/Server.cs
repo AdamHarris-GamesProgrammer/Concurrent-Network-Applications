@@ -144,10 +144,6 @@ namespace BasicServer
 
                 switch (recievedPacket.mPacketType)
                 {
-                    case PacketType.ChatMessage:
-                        ChatMessagePacket chatPacket = (ChatMessagePacket)recievedPacket;
-                        TcpSendToOthers(currentClient, chatPacket);
-                        break;
                     case PacketType.Disconnect:
                         DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
                         TcpSendToOthers(currentClient, disconnectPacket);
@@ -182,6 +178,10 @@ namespace BasicServer
                         TcpSendToOthers(currentClient, encryptedMessage);
                         break;
 
+                    case PacketType.EncryptedMessage:
+                        EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPacket;
+                        TcpSendToOthers(currentClient, encryptedChatMessage);
+                        break;
                     case PacketType.Login:
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
                         currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
@@ -211,9 +211,5 @@ namespace BasicServer
             NicknameWindowPacket nicknameWindowPacket = new NicknameWindowPacket(names);
             TcpSendToAll(nicknameWindowPacket);
         }
-
-
-
-
     }
 }

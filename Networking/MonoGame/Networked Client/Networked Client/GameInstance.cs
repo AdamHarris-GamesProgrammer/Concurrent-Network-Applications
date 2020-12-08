@@ -288,8 +288,6 @@ namespace NetworkedClient
                         case PacketType.Disconnect:
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
                             RemovePlayer(disconnectPacket.mId);
-
-
                             break;
                         default:
                             break;

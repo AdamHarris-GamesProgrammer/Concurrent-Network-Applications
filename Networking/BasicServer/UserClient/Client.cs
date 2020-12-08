@@ -131,30 +131,6 @@ namespace UserClient
                     MemoryStream stream = new MemoryStream(buffer);
 
                     Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
-
-                    switch (recievedPackage.mPacketType)
-                    {
-                        case PacketType.Empty:
-                            break;
-                        case PacketType.ChatMessage:
-                            ChatMessagePacket chatPacket = (ChatMessagePacket)recievedPackage;
-                            mClientForm.SendNicknameToWindow(chatPacket.mSender);
-                            mClientForm.SendMessageToWindow("Cheeky bit of UDP: " + chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
-                            break;
-                        case PacketType.PrivateMessage:
-                            break;
-                        case PacketType.NewNickname:
-                            break;
-                        case PacketType.Disconnect:
-                            break;
-                        case PacketType.NicknameWindow:
-                            break;
-                        case PacketType.Login:
-                            break;
-                        default:
-                            break;
-
-                    }
                 }
             }
             catch(SocketException e)
@@ -181,16 +157,14 @@ namespace UserClient
             mClientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
             mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
 
+            //Encrypts the nickname and message
+            byte[] encryptedNickname = EncryptString(Nickname);
+            byte[] encryptedMessage =  EncryptString(message);
+            
+            
             //Send message packet to network
-            ChatMessagePacket messagePacket = new ChatMessagePacket(Nickname, message);
-
-            EncryptString(message);
-
-            //EncryptedMessage encryptedMessage = new EncryptedMessage();
-            //SerializePacket(encryptedMessage);
-            //SerializePacket(messagePacket);
-            //UdpSendMessage(messagePacket);
-
+            EncryptedChatMessage encryptedChatMessage = new EncryptedChatMessage(encryptedNickname, encryptedMessage);
+            SerializePacket(encryptedChatMessage);
         }
 
 
@@ -234,11 +208,6 @@ namespace UserClient
 
                     switch (recievedPackage.mPacketType)
                     {
-                        case PacketType.ChatMessage:
-                            ChatMessagePacket chatPacket = (ChatMessagePacket)recievedPackage;
-                            mClientForm.SendNicknameToWindow(chatPacket.mSender);
-                            mClientForm.SendMessageToWindow(chatPacket.mMessage, System.Windows.HorizontalAlignment.Left);
-                            break;
                         case PacketType.PrivateMessage:
                             PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)recievedPackage;
                             mClientForm.SendNicknameToWindow("PM From " + privateMessagePacket.mSender, System.Windows.HorizontalAlignment.Left);
@@ -261,6 +230,15 @@ namespace UserClient
                             EncryptedMessage encryptedMessage = (EncryptedMessage)recievedPackage;
                             string msg = DecryptString(encryptedMessage.mBytes);
                             mClientForm.SendMessageToWindow(msg, System.Windows.HorizontalAlignment.Left);
+                            break;
+                        case PacketType.EncryptedMessage:
+                            EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPackage;
+                            string nickname = DecryptString(encryptedChatMessage.mNickname);
+                            string message = DecryptString(encryptedChatMessage.mMessage);
+
+                            mClientForm.SendNicknameToWindow(nickname);
+                            mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Left);
+
                             break;
                         default:
                             break;
@@ -298,11 +276,7 @@ namespace UserClient
 
         private byte[] EncryptString(string message)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(message);
-            EncryptedMessage messagePacket = new EncryptedMessage(bytes);
-            SerializePacket(messagePacket);
-
-            return bytes;
+            return Encoding.UTF8.GetBytes(message);
         }
 
         private string DecryptString(byte[] message)

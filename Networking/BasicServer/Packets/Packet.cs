@@ -14,7 +14,8 @@ namespace Packets
         Disconnect,
         NicknameWindow,
         Login,
-        Encrypted
+        Encrypted,
+        EncryptedMessage
     }
 
     /// <summary>
@@ -49,30 +50,6 @@ namespace Packets
             mMessage = message;
 
             mPacketType = PacketType.PrivateMessage;
-        }
-    }
-
-    /// <summary>
-    /// Group Chat Packet system, this stores the message and the sender of the message so the form can add there nickname to the message
-    /// </summary>
-    [Serializable]
-    public class ChatMessagePacket : Packet
-    {
-        /// <summary>
-        /// The message contents
-        /// </summary>
-        public string mMessage;
-
-        /// <summary>
-        /// The nickname of the sender of the message
-        /// </summary>
-        public string mSender;
-
-        public ChatMessagePacket(string sender, string message)
-        {
-            mMessage = message;
-            mSender = sender;
-            mPacketType = PacketType.ChatMessage;
         }
     }
 
@@ -160,6 +137,21 @@ namespace Packets
         {
             mBytes = bytes;
             mPacketType = PacketType.Encrypted;
+        }
+    }
+
+    [Serializable]
+    public class EncryptedChatMessage : Packet
+    {
+        public byte[] mNickname;
+        public byte[] mMessage;
+
+        public EncryptedChatMessage(byte[] nickname, byte[] message)
+        {
+            mNickname = nickname;
+            mMessage = message;
+
+            mPacketType = PacketType.EncryptedMessage;
         }
     }
 }
