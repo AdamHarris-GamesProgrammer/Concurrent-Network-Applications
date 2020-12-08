@@ -175,7 +175,7 @@ namespace UserClient
             mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
 
             //Sends private message over network
-            PrivateMessagePacket privateMessagePacket = new PrivateMessagePacket(mNickname, reciever, message);
+            EncryptedPrivateMessagePacket privateMessagePacket = new EncryptedPrivateMessagePacket(EncryptString(mNickname), EncryptString(reciever), EncryptString(message));
             SerializePacket(privateMessagePacket);
         }
 
@@ -208,14 +208,19 @@ namespace UserClient
 
                     switch (recievedPackage.mPacketType)
                     {
-                        case PacketType.PrivateMessage:
-                            PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)recievedPackage;
-                            mClientForm.SendNicknameToWindow("PM From " + privateMessagePacket.mSender, System.Windows.HorizontalAlignment.Left);
-                            mClientForm.SendMessageToWindow(privateMessagePacket.mMessage, System.Windows.HorizontalAlignment.Left);
+                        case PacketType.EncryptedMessage:
+                            EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPackage;
+                            mClientForm.SendNicknameToWindow(DecryptString(encryptedChatMessage.mNickname));
+                            mClientForm.SendMessageToWindow(DecryptString(encryptedChatMessage.mMessage), System.Windows.HorizontalAlignment.Left);
 
                             break;
-                        case PacketType.Empty:
+                        case PacketType.EncryptedPrivateMessage:
+                            EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPackage;
+                            mClientForm.SendNicknameToWindow("PM From " + DecryptString(privateMessagePacket.mSender), System.Windows.HorizontalAlignment.Left);
+                            mClientForm.SendMessageToWindow(DecryptString(privateMessagePacket.mMessage), System.Windows.HorizontalAlignment.Left);
+
                             break;
+
                         case PacketType.Disconnect:
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
                             mClientForm.DisconnectMessage(disconnectPacket.mNickname);
@@ -226,19 +231,7 @@ namespace UserClient
                             string[] names = nicknameWindowPacket.mNames.ToArray();
                             mClientForm.UpdateClientListWindow(names);
                             break;
-                        case PacketType.Encrypted:
-                            EncryptedMessage encryptedMessage = (EncryptedMessage)recievedPackage;
-                            string msg = DecryptString(encryptedMessage.mBytes);
-                            mClientForm.SendMessageToWindow(msg, System.Windows.HorizontalAlignment.Left);
-                            break;
-                        case PacketType.EncryptedMessage:
-                            EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPackage;
-                            string nickname = DecryptString(encryptedChatMessage.mNickname);
-                            string message = DecryptString(encryptedChatMessage.mMessage);
-
-                            mClientForm.SendNicknameToWindow(nickname);
-                            mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Left);
-
+                        case PacketType.Empty:
                             break;
                         default:
                             break;

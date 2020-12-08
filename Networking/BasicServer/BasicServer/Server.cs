@@ -119,11 +119,11 @@ namespace BasicServer
 
         private void TcpSendToSelected(Packet packet)
         {
-            PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)packet;
+            EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)packet;
 
-            string reciever = privateMessagePacket.mReciever;
+            string reciever  = System.Text.Encoding.UTF8.GetString(privateMessagePacket.mReciever);
 
-            foreach(Client cli in mClients.Values)
+            foreach (Client cli in mClients.Values)
             {
                 if(cli.Nickname == reciever)
                 {
@@ -166,16 +166,12 @@ namespace BasicServer
                         UpdateClientList(names);
 
                         break;
-                    case PacketType.PrivateMessage:
-                        PrivateMessagePacket privateMessagePacket = (PrivateMessagePacket)recievedPacket;
+                    case PacketType.EncryptedPrivateMessage:
+                        EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPacket;
                         TcpSendToSelected(privateMessagePacket);
 
                         break;
                     case PacketType.Empty:
-                        break;
-                    case PacketType.Encrypted:
-                        EncryptedMessage encryptedMessage = (EncryptedMessage)recievedPacket;
-                        TcpSendToOthers(currentClient, encryptedMessage);
                         break;
 
                     case PacketType.EncryptedMessage:

@@ -67,11 +67,7 @@ namespace BasicServer
 
         public void Login(RSAParameters clientKey)
         {
-            //set name end point and client key
-
             mPublicKey = clientKey;
-
-            //Tcp Send the server key packet
         }
 
         public Packet TcpRead()
@@ -132,11 +128,7 @@ namespace BasicServer
 
         private byte[] EncryptString(string message)
         {
-            byte[] bytes = Encoding.UTF8.GetBytes(message);
-            EncryptedMessage messagePacket = new EncryptedMessage(bytes);
-            TcpSend(messagePacket);
-
-            return bytes;
+            return Encoding.UTF8.GetBytes(message);
         }
 
         private string DecryptString(byte[] message)

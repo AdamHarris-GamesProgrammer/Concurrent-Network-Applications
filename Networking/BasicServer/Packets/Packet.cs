@@ -8,14 +8,13 @@ namespace Packets
     public enum PacketType
     {
         Empty,
-        ChatMessage,
-        PrivateMessage,
         NewNickname,
         Disconnect,
         NicknameWindow,
         Login,
-        Encrypted,
-        EncryptedMessage
+        EncryptedMessage,
+        EncryptedPrivateMessage,
+        EncryptedNickname
     }
 
     /// <summary>
@@ -32,24 +31,6 @@ namespace Packets
         public Packet()
         {
             mPacketType = PacketType.Empty;
-        }
-    }
-
-
-    [Serializable]
-    public class PrivateMessagePacket : Packet
-    {
-        public string mMessage;
-        public string mSender;
-        public string mReciever;
-
-        public PrivateMessagePacket(string sender, string reciever, string message)
-        {
-            mSender = sender;
-            mReciever = reciever;
-            mMessage = message;
-
-            mPacketType = PacketType.PrivateMessage;
         }
     }
 
@@ -129,18 +110,6 @@ namespace Packets
     }
 
     [Serializable]
-    public class EncryptedMessage : Packet
-    {
-        public byte[] mBytes;
-
-        public EncryptedMessage(byte[] bytes)
-        {
-            mBytes = bytes;
-            mPacketType = PacketType.Encrypted;
-        }
-    }
-
-    [Serializable]
     public class EncryptedChatMessage : Packet
     {
         public byte[] mNickname;
@@ -154,4 +123,22 @@ namespace Packets
             mPacketType = PacketType.EncryptedMessage;
         }
     }
+
+    [Serializable]
+    public class EncryptedPrivateMessagePacket : Packet
+    {
+        public byte[] mMessage;
+        public byte[] mSender;
+        public byte[] mReciever;
+
+        public EncryptedPrivateMessagePacket(byte[] sender, byte[] reciever, byte[] message)
+        {
+            mSender = sender;
+            mReciever = reciever;
+            mMessage = message;
+
+            mPacketType = PacketType.EncryptedPrivateMessage;
+        }
+    }
+
 }
