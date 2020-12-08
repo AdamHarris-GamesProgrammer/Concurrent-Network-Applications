@@ -52,9 +52,15 @@ namespace NetworkedClient
 
         public void AddPlayer(string uid)
         {
+            //64x64 is the width of our texture.
             Ball newBall = new Ball(Color.White, new Vector2(0,0));
 
             otherPlayers.TryAdd(uid, newBall);
+        }
+
+        public void RemovePlayer(string uid)
+        {
+            otherPlayers.Remove(uid);
         }
 
         public GameInstance()
@@ -65,6 +71,15 @@ namespace NetworkedClient
             mTcpClient = new TcpClient();
 
             otherPlayers = new Dictionary<string, Ball>();
+        }
+
+        ~GameInstance()
+        {
+
+
+            mReader.Close();
+            mWriter.Close();
+            mTcpClient.Close();
         }
 
         protected override void Initialize()
@@ -97,8 +112,6 @@ namespace NetworkedClient
 
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            
-
             if (kstate.IsKeyDown(Keys.Up)) player.Position.Y -= ballSpeed * deltaTime;
             else if (kstate.IsKeyDown(Keys.Down)) player.Position.Y += ballSpeed * deltaTime;
 
@@ -107,6 +120,7 @@ namespace NetworkedClient
 
             PositionPacket position = new PositionPacket(uniqueID, player.Position.X, player.Position.Y);
             SerializePacket(position);
+
 
             base.Update(gameTime);
         }
@@ -178,6 +192,16 @@ namespace NetworkedClient
             udpThread.Start();
             tcpThread.Start();
             base.Run();
+
+
+        }
+
+        protected override void OnExiting(object sender, EventArgs args)
+        {
+            DisconnectPacket disconnectPacket = new DisconnectPacket(uniqueID);
+            SerializePacket(disconnectPacket);
+
+            
         }
 
 
@@ -188,7 +212,6 @@ namespace NetworkedClient
             byte[] buffer = msgStream.GetBuffer();
             mUdpClient.Send(buffer, buffer.Length);
         }
-
 
 
         public void UdpProcessServerResponse()
@@ -249,8 +272,6 @@ namespace NetworkedClient
                             Players players = (Players)recievedPackage;
                             foreach(string id in players.mIds)
                             {
-
-
                                 AddPlayer(id);
                             }
                             break;
@@ -264,15 +285,17 @@ namespace NetworkedClient
 
                             MoveBall(positionPacket.mId, positionPacket.xPos, positionPacket.yPos);
                             break;
+                        case PacketType.Disconnect:
+                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
+                            RemovePlayer(disconnectPacket.mId);
+
+
+                            break;
                         default:
                             break;
                     }
                 }
             }
-
-            mReader.Close();
-            mWriter.Close();
-            mTcpClient.Close();
         }
 
         private void SerializePacket(Packet packetToSerialize)

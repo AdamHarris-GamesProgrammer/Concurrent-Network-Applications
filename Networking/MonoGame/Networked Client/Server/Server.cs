@@ -150,6 +150,12 @@ namespace Server
                         TcpSendToAll(positionPacket);
 
                         break;
+                    case PacketType.Disconnect:
+                        DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
+                        TcpSendToAll(disconnectPacket);
+                        mClients.TryRemove(disconnectPacket.mId, out currentClient);
+
+                        break;
                     default:
                         break;
                 }

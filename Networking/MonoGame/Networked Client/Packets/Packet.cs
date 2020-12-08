@@ -12,7 +12,9 @@ namespace Packets
         Login,
         NewPlayer,
         GUID,
-        Players
+        Players,
+        Disconnect,
+        Color
     }
 
     [Serializable]
@@ -107,4 +109,18 @@ namespace Packets
             mPacketType = PacketType.Login;
         }
     }
+
+    [Serializable] 
+    public class DisconnectPacket : Packet
+    {
+        public string mId;
+
+        public DisconnectPacket(string id)
+        {
+            mId = id;
+            mPacketType = PacketType.Disconnect;
+        }
+    }
 }
+
+

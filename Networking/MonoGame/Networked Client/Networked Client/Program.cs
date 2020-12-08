@@ -20,6 +20,8 @@ namespace NetworkedClient
             {
                 Console.WriteLine("Failed to connect to server");
             }
+
+            game.Exit();
         }
     }
 }
