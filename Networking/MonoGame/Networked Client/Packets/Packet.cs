@@ -14,7 +14,8 @@ namespace Packets
         GUID,
         Players,
         Disconnect,
-        Color
+        Color,
+        Velocity
     }
 
     [Serializable]
@@ -53,6 +54,22 @@ namespace Packets
             xPos = x;
             yPos = y;
             mPacketType = PacketType.Position;
+        }
+    }
+
+    [Serializable]
+    public class VelocityPacket : Packet
+    {
+        public string mId;
+        public float xVel;
+        public float yVal;
+
+        public VelocityPacket(string id, float x, float y)
+        {
+            mId = id;
+            xVel = x;
+            yVal = y;
+            mPacketType = PacketType.Velocity;
         }
     }
 

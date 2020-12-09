@@ -119,10 +119,15 @@ namespace UserClient
 
         private void SubmitButton_Click(object sender, RoutedEventArgs e)
         {
+            SendMessage();
+        }
+
+        private void SendMessage()
+        {
             if (InputField.Text == "") return;
 
 
-            if(mSelectedClient == "")
+            if (mSelectedClient == "")
             {
                 mClient.SendMessage(InputField.Text);
 
@@ -131,17 +136,19 @@ namespace UserClient
             else
             {
                 mClient.SendPrivateMessage(mSelectedClient, InputField.Text);
-                
+
                 ClientList.SelectedItem = null;
+
+                ClientList.UnselectAll();
 
                 SetButtonText("Send Message");
             }
-            
+
 
 
             InputField.Text = "";
 
-            if(mLastNicknameRecieved != "You" && mLastNicknameRecieved != "You -> " + mSelectedClient) mLastNicknameRecieved = "";
+            if (mLastNicknameRecieved != "You" && mLastNicknameRecieved != "You -> " + mSelectedClient) mLastNicknameRecieved = "";
         }
 
         private void DisconnectButton_Click(object sender, RoutedEventArgs e)
@@ -179,6 +186,14 @@ namespace UserClient
             mSelectedClient = (string)item.Content;
             SetButtonText("Send Message to "+ System.Environment.NewLine + mSelectedClient);
 
+        }
+
+        private void InputField_KeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if(e.Key == System.Windows.Input.Key.Enter)
+            {
+                SendMessage();
+            }
         }
     }
 }

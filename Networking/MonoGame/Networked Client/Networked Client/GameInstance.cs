@@ -27,12 +27,15 @@ namespace NetworkedClient
         private GraphicsDeviceManager _graphics;
         private SpriteBatch _spriteBatch;
 
+        private Vector2 tempVelocity;
+
         private string uniqueID;
 
         bool mIsConnected;
         
         Ball player;
         Texture2D ballTexture;
+        
         float ballSpeed;
 
         Dictionary<string, Ball> otherPlayers;
@@ -41,21 +44,31 @@ namespace NetworkedClient
         {
             public Color PlayerColor;
             public Vector2 Position;
+            public Vector2 Velocity;
+            public string Id;
 
-            public Ball(Color color, Vector2 pos)
+            public Ball(string id, Color color, Vector2 pos)
             {
+                Id = id;
                 PlayerColor = color;
                 Position = pos;
+                Velocity = new Vector2(0, 0);
             }
         }
 
-
+        
         public void AddPlayer(string uid)
         {
             //64x64 is the width of our texture.
-            Ball newBall = new Ball(Color.White, new Vector2(0,0));
+            Ball newBall = new Ball(uid, Color.White, new Vector2(0,0));
 
-            otherPlayers.TryAdd(uid, newBall);
+            if(otherPlayers.TryAdd(uid, newBall))
+            {
+                PositionPacket positionPacket = new PositionPacket(uniqueID, player.Position.X, player.Position.Y);
+                SerializePacket(positionPacket);
+            }
+
+          
         }
 
         public void RemovePlayer(string uid)
@@ -75,8 +88,6 @@ namespace NetworkedClient
 
         ~GameInstance()
         {
-
-
             mReader.Close();
             mWriter.Close();
             mTcpClient.Close();
@@ -84,12 +95,21 @@ namespace NetworkedClient
 
         protected override void Initialize()
         {
-            // TODO: Add your initialization logic here
-            player.Position = new Vector2(_graphics.PreferredBackBufferWidth / 2, _graphics.PreferredBackBufferHeight / 2);
             ballSpeed = 100.0f;
 
 
             base.Initialize();
+        }
+
+        private void SetVelocity(string id, Vector2 velocity)
+        {
+            Ball tempBall;
+
+            otherPlayers.TryGetValue(id, out tempBall);
+
+            tempBall.Velocity= velocity;
+
+            otherPlayers[id] = tempBall;
         }
 
         protected override void LoadContent()
@@ -112,26 +132,49 @@ namespace NetworkedClient
 
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            if (kstate.IsKeyDown(Keys.Up)) player.Position.Y -= ballSpeed * deltaTime;
-            else if (kstate.IsKeyDown(Keys.Down)) player.Position.Y += ballSpeed * deltaTime;
+            if (kstate.IsKeyDown(Keys.Up)) player.Velocity.Y = -ballSpeed * deltaTime;
+            else if (kstate.IsKeyDown(Keys.Down)) player.Velocity.Y = ballSpeed * deltaTime;
+            else if (kstate.IsKeyUp(Keys.Up) && kstate.IsKeyUp(Keys.Down)) player.Velocity.Y = 0.0f;
 
-            if (kstate.IsKeyDown(Keys.Left)) player.Position.X -= ballSpeed * deltaTime;
-            else if (kstate.IsKeyDown(Keys.Right)) player.Position.X += ballSpeed * deltaTime;
+            if (kstate.IsKeyDown(Keys.Left)) player.Velocity.X = -ballSpeed * deltaTime;
+            else if (kstate.IsKeyDown(Keys.Right)) player.Velocity.X = ballSpeed * deltaTime;
+            else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) player.Velocity.X = 0.0f;
 
-            PositionPacket position = new PositionPacket(uniqueID, player.Position.X, player.Position.Y);
-            SerializePacket(position);
+            if(tempVelocity != player.Velocity)
+            {
+                tempVelocity = player.Velocity;
+                VelocityPacket velocity = new VelocityPacket(uniqueID, player.Velocity.X, player.Velocity.Y);
+                SerializePacket(velocity);
+            }
+
+
+            foreach(Ball ball in otherPlayers.Values.ToList())
+            {
+                MoveBall(ball.Id, ball.Velocity);
+            }
 
 
             base.Update(gameTime);
         }
 
-        private void MoveBall(string uid, float x, float y)
+        private void MoveBall(string uid, Vector2 velocity)
         {
             Ball tempBall;
 
             otherPlayers.TryGetValue(uid, out tempBall);
 
-            tempBall.Position = new Vector2(x, y);
+            tempBall.Position += velocity;
+
+            otherPlayers[uid] = tempBall;
+        }
+
+        private void MoveToPosition(string uid, Vector2 position)
+        {
+            Ball tempBall;
+
+            otherPlayers.TryGetValue(uid, out tempBall);
+
+            tempBall.Position = position;
 
             otherPlayers[uid] = tempBall;
         }
@@ -141,10 +184,10 @@ namespace NetworkedClient
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin();
-            _spriteBatch.Draw(ballTexture, player.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
-
+            
             foreach(Ball ball in otherPlayers.Values.ToList())
             {
+                if (ball.Id == player.Id) continue;
                 _spriteBatch.Draw(ballTexture, ball.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
             }
 
@@ -283,7 +326,12 @@ namespace NetworkedClient
                         case PacketType.Position:
                             PositionPacket positionPacket = (PositionPacket)recievedPackage;
 
-                            MoveBall(positionPacket.mId, positionPacket.xPos, positionPacket.yPos);
+                            MoveToPosition(positionPacket.mId, new Vector2(positionPacket.xPos, positionPacket.yPos));
+                            break;
+                        case PacketType.Velocity:
+                            VelocityPacket velocityPacket = (VelocityPacket)recievedPackage;
+
+                            SetVelocity(velocityPacket.mId, new Vector2(velocityPacket.xVel, velocityPacket.yVal));
                             break;
                         case PacketType.Disconnect:
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;

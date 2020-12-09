@@ -147,8 +147,16 @@ namespace Server
                         break;
 
                     case PacketType.Position:
+                        
                         PositionPacket positionPacket = (PositionPacket)recievedPacket;
+                        Console.WriteLine("Position Packet received from: " + positionPacket.mId);
                         TcpSendToAll(positionPacket);
+
+                        break;
+                    case PacketType.Velocity:
+                        VelocityPacket velocityPacket = (VelocityPacket)recievedPacket;
+                        Console.WriteLine("Velocity Packet received from: " + velocityPacket.mId);
+                        TcpSendToAll(velocityPacket);
 
                         break;
                     case PacketType.Disconnect:

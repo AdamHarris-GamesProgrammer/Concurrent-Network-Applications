@@ -26,7 +26,7 @@
             <Label VerticalAlignment="Center" Grid.Column="2" x:Name="currentName"/>
 
             <Label VerticalAlignment="Center" Content= "New Nickname: " Grid.Row="1" Grid.Column="0"/>
-            <TextBox VerticalAlignment="Center" x:Name="nicknameInput" Grid.Row="1" Grid.Column="2"/>
+            <TextBox VerticalAlignment="Center" x:Name="nicknameInput" Grid.Row="1" Grid.Column="2" KeyDown="nicknameInput_KeyDown"/>
 
             <Button x:Name="cancelButton" Click="cancelButton_Click" Grid.Row ="2" Grid.Column="0" Content = "Cancel"/>
             <Button x:Name="submitButton" Click="submitButton_Click" Grid.Row ="2" Grid.Column="2" Content = "Change Nickname"/>

@@ -39,5 +39,14 @@ namespace UserClient
             mOwner.Nickname = nicknameInput.Text;
             Close();
         }
+
+        private void nicknameInput_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (e.Key == System.Windows.Input.Key.Enter)
+            {
+                mOwner.Nickname = nicknameInput.Text;
+                Close();
+            }
+        }
     }
 }

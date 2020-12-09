@@ -68,7 +68,8 @@
 
                     <TextBox x:Name="InputField" Grid.Column="0" Background="LightGray" 
                              HorizontalScrollBarVisibility="Disabled" 
-                             VerticalScrollBarVisibility="Auto"/>
+                             VerticalScrollBarVisibility="Auto"
+                             KeyDown="InputField_KeyDown"/>
                     <Button x:Name="SubmitButton" Grid.Column="1" Margin="5 0 0 0" Click="SubmitButton_Click">
                         <Label Content="Send Message" HorizontalAlignment="Center"/>
                     </Button>
