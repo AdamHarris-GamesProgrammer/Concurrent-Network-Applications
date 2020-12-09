@@ -59,13 +59,11 @@ namespace NetworkedClient
         
         public void AddPlayer(string uid)
         {
-            //64x64 is the width of our texture.
             Ball newBall = new Ball(uid, Color.White, new Vector2(0,0));
 
             if(otherPlayers.TryAdd(uid, newBall))
             {
-                PositionPacket positionPacket = new PositionPacket(uniqueID, player.Position.X, player.Position.Y);
-                SerializePacket(positionPacket);
+                
             }
 
           
@@ -309,14 +307,22 @@ namespace NetworkedClient
                             NewPlayer newPlayer = (NewPlayer)recievedPackage;
 
                             AddPlayer(newPlayer.mId);
+
+                            Ball tempPlayer = otherPlayers[uniqueID];
+                            PositionPacket position = new PositionPacket(uniqueID, tempPlayer.Position.X, tempPlayer.Position.Y);
+                            SerializePacket(position);
+
                             break;
 
                         case PacketType.Players:
+
+
                             Players players = (Players)recievedPackage;
-                            foreach(string id in players.mIds)
+                            foreach (string id in players.mIds)
                             {
                                 AddPlayer(id);
                             }
+
                             break;
                         case PacketType.GUID:
                             GUID guidPacket = (GUID)recievedPackage;

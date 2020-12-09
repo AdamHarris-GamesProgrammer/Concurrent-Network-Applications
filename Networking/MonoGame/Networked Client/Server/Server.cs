@@ -18,8 +18,6 @@ namespace Server
 
         private UdpClient mUdpListener;
 
-        static int playerCount = 0;
-
         string latestPlayer;
 
 
@@ -38,13 +36,8 @@ namespace Server
 
             mTcpListener.Start();
 
-            int clientIndex = 0;
-
             while (true)
             {
-                int index = clientIndex;
-                clientIndex++;
-
                 Console.WriteLine("Awaiting Connection");
 
                 Socket socket = mTcpListener.AcceptSocket();
@@ -58,8 +51,6 @@ namespace Server
 
 
                 Console.WriteLine("Accepted Connection");
-
-                playerCount++;
 
                 Thread tcpThread = new Thread(() => { ClientMethod(latestPlayer); });
                 Thread udpThread = new Thread(UdpListen);
@@ -147,7 +138,6 @@ namespace Server
                         break;
 
                     case PacketType.Position:
-                        
                         PositionPacket positionPacket = (PositionPacket)recievedPacket;
                         Console.WriteLine("Position Packet received from: " + positionPacket.mId);
                         TcpSendToAll(positionPacket);
