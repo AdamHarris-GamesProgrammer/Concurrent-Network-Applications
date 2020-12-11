@@ -130,6 +130,8 @@ namespace NetworkedClient
             //Sets the velocity
             tempBall.Velocity = velocity;
 
+            MoveBall(id, velocity);
+
             //Sets the player lists instance of the ball to the temp ball object
             otherPlayers[id] = tempBall;
         }
@@ -181,7 +183,7 @@ namespace NetworkedClient
             }
 
             //Adds the velocity to the players position
-            AddVelocity(mPlayer.Id, mPlayer.Velocity);
+            AddVelocity(ref mPlayer, mPlayer.Velocity);
 
             //Ensures a velocity packet is only sent when needed 
             if (mTempVelocity != mPlayer.Velocity)
@@ -230,7 +232,7 @@ namespace NetworkedClient
                 otherPlayers.TryGetValue(uid, out tempBall);
 
                 //Adds the velocity to the balls position
-                AddVelocity(uid, velocity);
+                AddVelocity(ref tempBall, velocity);
 
                 //Sets the lists instance of the ball equal to the temp ball object
                 otherPlayers[uid] = tempBall;
@@ -241,13 +243,8 @@ namespace NetworkedClient
         /// <summary>
         /// This method adds the velocity to the passed in balls position and confines it to screen space
         /// </summary>
-        private void AddVelocity(string id, Vector2 velocity)
+        private void AddVelocity(ref Ball ball, Vector2 velocity)
         {
-
-            Ball ball;
-
-            otherPlayers.TryGetValue(id, out ball);
-
             //Adds the velocity
             ball.Position += velocity;
 
@@ -272,9 +269,6 @@ namespace NetworkedClient
             {
                 ball.Position.Y = mBallTexture.Height / 2;
             }
-
-
-            otherPlayers[id] = ball;
         }
 
         /// <summary>
