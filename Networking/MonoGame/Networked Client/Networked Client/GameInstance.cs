@@ -144,8 +144,9 @@ namespace NetworkedClient
             else if (kstate.IsKeyDown(Keys.Right)) player.Velocity.X = ballSpeed * deltaTime;
             else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) player.Velocity.X = 0.0f;
 
-            player.Position += player.Velocity;
+            AddVelocity(ref player, player.Velocity);
 
+            //Ensures a velocity packet is only sent when needed 
             if (tempVelocity != player.Velocity)
             {
                 tempVelocity = player.Velocity;
@@ -179,11 +180,35 @@ namespace NetworkedClient
 
                 otherPlayers.TryGetValue(uid, out tempBall);
 
-                tempBall.Position += velocity;
+                //tempBall.Position += velocity;
+
+                AddVelocity(ref tempBall, velocity);
 
                 otherPlayers[uid] = tempBall;
 
             }
+        }
+
+        private void AddVelocity(ref Ball ball, Vector2 velocity)
+        {
+            ball.Position += velocity;
+
+            if(ball.Position.X > _graphics.PreferredBackBufferWidth - ballTexture.Width / 2)
+            {
+                ball.Position.X = _graphics.PreferredBackBufferWidth - ballTexture.Width / 2;
+            }else if(ball.Position.X < ballTexture.Width / 2)
+            {
+                ball.Position.X = ballTexture.Width / 2;
+            }
+
+            if(ball.Position.Y > _graphics.PreferredBackBufferHeight - ballTexture.Height / 2)
+            {
+                ball.Position.Y = _graphics.PreferredBackBufferHeight - ballTexture.Height / 2;
+            }else if(ball.Position.Y < ballTexture.Height / 2)
+            {
+                ball.Position.Y = ballTexture.Height / 2;
+            }
+
         }
 
         private void MoveToPosition(string uid, Vector2 position)
