@@ -16,6 +16,10 @@ namespace NetworkedClient
 {
     public class GameInstance : Game
     {
+        //Monogame variables
+        private GraphicsDeviceManager _graphics;
+        private SpriteBatch _spriteBatch;
+
         private NetworkStream mStream;
         private BinaryWriter mWriter;
         private BinaryReader mReader;
@@ -24,22 +28,21 @@ namespace NetworkedClient
         private UdpClient mUdpClient;
         private TcpClient mTcpClient;
 
-        private GraphicsDeviceManager _graphics;
-        private SpriteBatch _spriteBatch;
 
-        private Vector2 tempVelocity;
 
-        private string uniqueID;
+        private Vector2 mTempVelocity;
+
+        private string mUniqueID;
 
         bool mIsConnected;
 
-        Ball player;
-        Texture2D ballTexture;
+        Ball mPlayer;
+        Texture2D mBallTexture;
 
-        float ballSpeed;
+        float mBallSpeed;
 
-        float timeSinceLastPositon = float.MaxValue;
-        float positionPacketTimer = 1.0f;
+        float mTimeSinceLastPositionPacket = float.MaxValue;
+        float mPositionPacketTimer = 1.0f;
 
         Dictionary<string, Ball> otherPlayers;
 
@@ -50,6 +53,7 @@ namespace NetworkedClient
             public Vector2 Velocity;
             public string Id;
 
+            //Ball Constructor
             public Ball(string id, Color color, Vector2 pos)
             {
                 Id = id;
@@ -59,7 +63,10 @@ namespace NetworkedClient
             }
         }
 
-
+        /// <summary>
+        /// Adds a player to the player list
+        /// </summary>
+        /// <param name="uid"></param>
         public void AddPlayer(string uid)
         {
             Ball newBall = new Ball(uid, Color.White, new Vector2(400, 240));
@@ -67,23 +74,32 @@ namespace NetworkedClient
             otherPlayers.TryAdd(uid, newBall);
         }
 
+        /// <summary>
+        /// Removes a player from the player list
+        /// </summary>
+        /// <param name="uid"></param>
         public void RemovePlayer(string uid)
         {
             otherPlayers.Remove(uid);
         }
 
+        //Constructor for the game class
         public GameInstance()
         {
             _graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+
+            //Initializes the TCP client
             mTcpClient = new TcpClient();
 
             otherPlayers = new Dictionary<string, Ball>();
 
-            player = new Ball("", Color.White, new Vector2(400, 240));
+            //Initializes the Player object
+            mPlayer = new Ball("", Color.White, new Vector2(400, 240));
         }
 
+        //Destructor for the game class
         ~GameInstance()
         {
             mReader.Close();
@@ -93,22 +109,33 @@ namespace NetworkedClient
 
         protected override void Initialize()
         {
-            ballSpeed = 100.0f;
+            //Initializes the ball speed
+            mBallSpeed = 100.0f;
 
 
             base.Initialize();
         }
 
+        /// <summary>
+        /// Sets the velocity of the desired velocity
+        /// </summary>
+        /// <param name="id"></param>
+        /// <param name="velocity"></param>
         private void SetVelocity(string id, Vector2 velocity)
         {
+            //Temp ball object used for setting the velocity
             Ball tempBall;
 
+            //Attempts to get the ball based on the passed in id
             otherPlayers.TryGetValue(id, out tempBall);
 
+            //Moves the ball
             MoveBall(id, velocity);
 
+            //Sets the velocity
             tempBall.Velocity = velocity;
 
+            //Sets the player lists instance of the ball to the temp ball object
             otherPlayers[id] = tempBall;
         }
 
@@ -117,159 +144,230 @@ namespace NetworkedClient
             _spriteBatch = new SpriteBatch(GraphicsDevice);
 
 
-            ballTexture = Content.Load<Texture2D>("ball");
+            mBallTexture = Content.Load<Texture2D>("ball");
 
             // TODO: use this.Content to load your game content here
         }
 
+        /// <summary>
+        /// Update method called during in MonoGames game loop. Used in this case to handle input and move players
+        /// </summary>
+        /// <param name="gameTime"></param>
         protected override void Update(GameTime gameTime)
         {
+            //Allows the player to close the game window by pressing escape
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
-
-            // TODO: Add your update logic here
+            //Gets the keyboard state
             var kstate = Keyboard.GetState();
 
+            //Short hand for the delta time between frames
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            timeSinceLastPositon += deltaTime;
+            //Adds the delta time to the positon timer
+            mTimeSinceLastPositionPacket += deltaTime;
 
+            //If the Up or Down arrow is down then set the velocity
+            if (kstate.IsKeyDown(Keys.Up)) mPlayer.Velocity.Y = -mBallSpeed * deltaTime;
+            else if (kstate.IsKeyDown(Keys.Down)) mPlayer.Velocity.Y = mBallSpeed * deltaTime;
+            //If both the keys are up then set the velocity to 0
+            else if (kstate.IsKeyUp(Keys.Up) && kstate.IsKeyUp(Keys.Down)) mPlayer.Velocity.Y = 0.0f;
 
-            if (kstate.IsKeyDown(Keys.Up)) player.Velocity.Y = -ballSpeed * deltaTime;
-            else if (kstate.IsKeyDown(Keys.Down)) player.Velocity.Y = ballSpeed * deltaTime;
-            else if (kstate.IsKeyUp(Keys.Up) && kstate.IsKeyUp(Keys.Down)) player.Velocity.Y = 0.0f;
+            //If the left or right arrow is down then set the velocity
+            if (kstate.IsKeyDown(Keys.Left)) mPlayer.Velocity.X = -mBallSpeed * deltaTime;
+            else if (kstate.IsKeyDown(Keys.Right)) mPlayer.Velocity.X = mBallSpeed * deltaTime;
+            //If both the left and right arrow keys are up then set the velocity to 0
+            else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) mPlayer.Velocity.X = 0.0f;
 
-            if (kstate.IsKeyDown(Keys.Left)) player.Velocity.X = -ballSpeed * deltaTime;
-            else if (kstate.IsKeyDown(Keys.Right)) player.Velocity.X = ballSpeed * deltaTime;
-            else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) player.Velocity.X = 0.0f;
+            if (kstate.IsKeyDown(Keys.D))
+            {
+                int a = 5;
+            }
 
-            AddVelocity(ref player, player.Velocity);
+            //Adds the velocity to the players position
+            AddVelocity(ref mPlayer, mPlayer.Velocity);
 
             //Ensures a velocity packet is only sent when needed 
-            if (tempVelocity != player.Velocity)
+            if (mTempVelocity != mPlayer.Velocity)
             {
-                tempVelocity = player.Velocity;
-                VelocityPacket velocity = new VelocityPacket(uniqueID, player.Velocity.X, player.Velocity.Y);
+                //Resets the temp velocity to the players current velocity
+                mTempVelocity = mPlayer.Velocity;
+                
+                //Serializes and Sends a velocity packet over the network via TCP
+                VelocityPacket velocity = new VelocityPacket(mPlayer.Id, mPlayer.Velocity.X, mPlayer.Velocity.Y);
                 UdpSendMessage(velocity);
             }
 
+            //Moves each of the balls in the player list
             foreach (Ball ball in otherPlayers.Values.ToList())
             {
                 MoveBall(ball.Id, ball.Velocity);
             }
 
-            if (timeSinceLastPositon > positionPacketTimer)
+            //if the time since the last position packet is greater than the timer
+            if (mTimeSinceLastPositionPacket > mPositionPacketTimer)
             {
-                PositionPacket positionPacket = new PositionPacket(uniqueID, player.Position.X, player.Position.Y);
+                //Then serialize and send a position packet over the network via TCP
+                PositionPacket positionPacket = new PositionPacket(mUniqueID, mPlayer.Position.X, mPlayer.Position.Y);
                 UdpSendMessage(positionPacket);
 
-                timeSinceLastPositon = 0.0f;
+                //Resets the timer variable
+                mTimeSinceLastPositionPacket = 0.0f;
             }
 
 
             base.Update(gameTime);
         }
 
+        /// <summary>
+        /// Moves the ball based on the passed in velocity
+        /// </summary>
+        /// <param name="uid"></param>
+        /// <param name="velocity"></param>
         private void MoveBall(string uid, Vector2 velocity)
         {
+            //Checks the uid is not null 
             if (uid != null)
             {
+                //Creates a temp ball object to modify
                 Ball tempBall;
-
-
+    
+                //Attempts to get the ball from the player list
                 otherPlayers.TryGetValue(uid, out tempBall);
 
-                //tempBall.Position += velocity;
-
+                //Adds the velocity to the balls position
                 AddVelocity(ref tempBall, velocity);
 
+                //Sets the lists instance of the ball equal to the temp ball object
                 otherPlayers[uid] = tempBall;
 
             }
         }
 
+        /// <summary>
+        /// This method adds the velocity to the passed in balls position and confines it to screen space
+        /// </summary>
+        /// <param name="ball"></param>
+        /// <param name="velocity"></param>
         private void AddVelocity(ref Ball ball, Vector2 velocity)
         {
+            //Adds the velocity
             ball.Position += velocity;
 
-            if(ball.Position.X > _graphics.PreferredBackBufferWidth - ballTexture.Width / 2)
+            //Checks the right bound of the screen
+            if(ball.Position.X > _graphics.PreferredBackBufferWidth - mBallTexture.Width / 2)
             {
-                ball.Position.X = _graphics.PreferredBackBufferWidth - ballTexture.Width / 2;
-            }else if(ball.Position.X < ballTexture.Width / 2)
+                ball.Position.X = _graphics.PreferredBackBufferWidth - mBallTexture.Width / 2;
+            }
+            //Checks the left bound of the screen
+            else if(ball.Position.X < mBallTexture.Width / 2)
             {
-                ball.Position.X = ballTexture.Width / 2;
+                ball.Position.X = mBallTexture.Width / 2;
             }
 
-            if(ball.Position.Y > _graphics.PreferredBackBufferHeight - ballTexture.Height / 2)
+            //Checks the bottom bound of the screen
+            if(ball.Position.Y > _graphics.PreferredBackBufferHeight - mBallTexture.Height / 2)
             {
-                ball.Position.Y = _graphics.PreferredBackBufferHeight - ballTexture.Height / 2;
-            }else if(ball.Position.Y < ballTexture.Height / 2)
+                ball.Position.Y = _graphics.PreferredBackBufferHeight - mBallTexture.Height / 2;
+            }
+            //Checks the top bound of the screen
+            else if(ball.Position.Y < mBallTexture.Height / 2)
             {
-                ball.Position.Y = ballTexture.Height / 2;
+                ball.Position.Y = mBallTexture.Height / 2;
             }
 
         }
 
+        /// <summary>
+        /// Moves a specified ball to a specified position used with the position packet
+        /// </summary>
+        /// <param name="uid"></param>
+        /// <param name="position"></param>
         private void MoveToPosition(string uid, Vector2 position)
         {
-            if(uid == uniqueID)
+            //Checks to see if the unique identifier passed in is the players identifier
+            if (uid == mUniqueID)
             {
-                player.Position = position;
+                //Sets the players positon
+                mPlayer.Position = position;
             }
             else
             {
+                //Creates a temp ball object
                 Ball tempBall;
 
+                //Gets the ball based on the unique ID passed in
                 otherPlayers.TryGetValue(uid, out tempBall);
 
+                //Sets the positon of the temp ball to the passed in position
                 tempBall.Position = position;
 
+                //Sets the players ball position equal to the temp balls position
                 otherPlayers[uid] = tempBall;
             }
-
-
         }
 
+        /// <summary>
+        /// Draws the game to the screen
+        /// </summary>
+        /// <param name="gameTime"></param>
         protected override void Draw(GameTime gameTime)
         {
+            //Clears the back buffers
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
+            //Begins the sprite drawing
             _spriteBatch.Begin();
 
-            //Draw the player
-            _spriteBatch.Draw(ballTexture, player.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+            //Draws the player
+            _spriteBatch.Draw(mBallTexture, mPlayer.Position, null, Color.White, 0.0f, new Vector2(mBallTexture.Width / 2, mBallTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
 
+            //Draws the other players
             foreach (Ball ball in otherPlayers.Values.ToList())
             {
-                if (ball.Id == player.Id)
-                {
-                    int a = 4;
-                    continue;
-                }
-                _spriteBatch.Draw(ballTexture, ball.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+                if (ball.Id == mPlayer.Id) continue;
+                
+                //Draws all other balls
+                _spriteBatch.Draw(mBallTexture, ball.Position, null, Color.White, 0.0f, new Vector2(mBallTexture.Width / 2, mBallTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
             }
 
+            //ends the sprite drawing 
             _spriteBatch.End();
 
 
             base.Draw(gameTime);
         }
+
+        /// <summary>
+        /// Allows the client to connect to the server
+        /// </summary>
+        /// <param name="ipAddress"></param>
+        /// <param name="port"></param>
+        /// <returns></returns>
         public bool Connect(string ipAddress, int port)
         {
             try
             {
+                //connects the tcp client to the server
                 mTcpClient.Connect(ipAddress, port);
+
+                //Sets the stream to read from the tcp stream
                 mStream = mTcpClient.GetStream();
+
+                //Initializes the writer, reader and formatter
                 mWriter = new BinaryWriter(mStream, Encoding.UTF8);
                 mReader = new BinaryReader(mStream, Encoding.UTF8);
                 mFormatter = new BinaryFormatter();
 
+                //Initializes the UDP client and connects to the server
                 mUdpClient = new UdpClient();
                 mUdpClient.Connect(ipAddress, port);
-
+                
+                //Sets is connected to true
                 mIsConnected = true;
 
+                //Sends a Connect Packet over the network via TCP
                 ConnectPacket connectPacket = new ConnectPacket();
                 SerializePacket(connectPacket);
 
@@ -283,40 +381,58 @@ namespace NetworkedClient
             }
         }
 
+        /// <summary>
+        /// Run method is used to start the networking and graphics side of the program
+        /// </summary>
         public void Run()
         {
+            //Creates a thread for processing the TCP and UDP aspects of the project
             Thread udpThread = new Thread(UdpProcessServerResponse);
             Thread tcpThread = new Thread(TcpProcessServerResponse);
 
-
-            LoginPacket loginPacket = new LoginPacket(uniqueID,mUdpClient.Client.LocalEndPoint.ToString());
+            //Sends a login packet via TCP
+            LoginPacket loginPacket = new LoginPacket(mUniqueID,mUdpClient.Client.LocalEndPoint.ToString());
             SerializePacket(loginPacket);
 
+            //Starts the UDP and TCP threads
             udpThread.Start();
             tcpThread.Start();
+
+            //Starts the Monogame game loop
             base.Run();
-
-
         }
 
+        /// <summary>
+        /// OnExiting event called by MonoGame, in this case it is used to call the disconnect packet
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="args"></param>
         protected override void OnExiting(object sender, EventArgs args)
         {
-            DisconnectPacket disconnectPacket = new DisconnectPacket(uniqueID);
+            DisconnectPacket disconnectPacket = new DisconnectPacket(mUniqueID);
             SerializePacket(disconnectPacket);
 
 
         }
 
-
+        /// <summary>
+        /// Sends a packet via UDP
+        /// </summary>
+        /// <param name="packet"></param>
         public void UdpSendMessage(Packet packet)
         {
             MemoryStream msgStream = new MemoryStream();
+            //Serializes the packet into the stream
             mFormatter.Serialize(msgStream, packet);
+            //Gets the bytes buffer from the stream
             byte[] buffer = msgStream.GetBuffer();
+            //Sends the buffer over the network via UDP
             mUdpClient.Send(buffer, buffer.Length);
         }
 
-
+        /// <summary>
+        /// Processes any UDP packets received from the network
+        /// </summary>
         public void UdpProcessServerResponse()
         {
             try
@@ -325,22 +441,27 @@ namespace NetworkedClient
 
                 while (true)
                 {
+                    //Gets any UDP packets sent
                     byte[] buffer = mUdpClient.Receive(ref endPoint);
 
                     MemoryStream stream = new MemoryStream(buffer);
 
-                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
+                    //Deserializes the received packet
+                    Packet recievedPacket = mFormatter.Deserialize(stream) as Packet;
 
-                    switch (recievedPackage.mPacketType)
+                    //Processes the packet depending if it is a velocity or a position packet
+                    switch (recievedPacket.mPacketType)
                     {
                         case PacketType.Velocity:
-                            VelocityPacket velocityPacket = (VelocityPacket)recievedPackage;
+                            VelocityPacket velocityPacket = (VelocityPacket)recievedPacket;
 
+                            //Sets the velocity of the referred player to the passed in velocity
                             SetVelocity(velocityPacket.mId, new Vector2(velocityPacket.xVel, velocityPacket.yVal));
                             break;
                         case PacketType.Position:
-                            PositionPacket positionPacket = (PositionPacket)recievedPackage;
+                            PositionPacket positionPacket = (PositionPacket)recievedPacket;
 
+                            //Sets the position of the referred player to the passed in position
                             MoveToPosition(positionPacket.mId, new Vector2(positionPacket.xPos, positionPacket.yPos));
                             break;
                         default:
@@ -355,55 +476,71 @@ namespace NetworkedClient
             }
         }
 
+        /// <summary>
+        /// Processes any received TCP packages
+        /// </summary>
         private void TcpProcessServerResponse()
         {
+            //Used to store the number of bytes that need to be read from the network
             int numberOfBytes;
 
             while (mIsConnected)
             {
+                //sets the number of bytes equal to the size from the reader
                 if ((numberOfBytes = mReader.ReadInt32()) != 0)
                 {
+                    //Breaks out of loop if we are no longer connected
                     if (!mIsConnected) break;
 
+                    //Gets the bytes for the buffer from the reader
                     byte[] buffer = mReader.ReadBytes(numberOfBytes);
 
                     MemoryStream stream = new MemoryStream(buffer);
 
-                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
+                    //Deserializes the data as a packet
+                    Packet recievedPacket = mFormatter.Deserialize(stream) as Packet;
 
-                    switch (recievedPackage.mPacketType)
+                    //Tests what type of packet we have received 
+                    switch (recievedPacket.mPacketType)
                     {
                         case PacketType.NewPlayer:
-                            NewPlayer newPlayer = (NewPlayer)recievedPackage;
+                            //Casts the recievedPacket into a new player packet
+                            NewPlayer newPlayer = (NewPlayer)recievedPacket;
 
+                            //Adds the new player to the list of players 
                             AddPlayer(newPlayer.mId);
 
-                            Ball tempPlayer = otherPlayers[uniqueID];
-                            PositionPacket position = new PositionPacket(uniqueID, tempPlayer.Position.X, tempPlayer.Position.Y);
+                            //Sends this players position to the new player
+                            PositionPacket position = new PositionPacket(mUniqueID, mPlayer.Position.X, mPlayer.Position.Y);
                             UdpSendMessage(position);
-
                             break;
 
                         case PacketType.Players:
-                            Players players = (Players)recievedPackage;
+                            //Casts the recieved packet to the Players packet
+                            Players players = (Players)recievedPacket;
+
+                            //Adds each player to the local list
                             foreach (string id in players.mIds)
                             {
-                                if (id == uniqueID) continue;
+                                if (id == mUniqueID) continue;
                                 AddPlayer(id);
                             }
-
                             break;
                         case PacketType.GUID:
-                            GUID guidPacket = (GUID)recievedPackage;
+                            //Casts the received packet into a GUID packet
+                            GUID guidPacket = (GUID)recievedPacket;
 
-                            uniqueID = guidPacket.mId;
-                            player.Id = uniqueID;
-                            otherPlayers.Add(uniqueID, player);
-
+                            //Sets the unique id for ourself and the player
+                            mUniqueID = guidPacket.mId;
+                            mPlayer.Id = mUniqueID;
+                            //Adds the player to the other players list
+                            otherPlayers.Add(mUniqueID, mPlayer);
                             break;
 
                         case PacketType.Disconnect:
-                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
+                            //Casts the received Packet to a disconnect packet
+                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
+                            //Removes the disconnected player
                             RemovePlayer(disconnectPacket.mId);
                             break;
                         default:
@@ -413,11 +550,20 @@ namespace NetworkedClient
             }
         }
 
+        /// <summary>
+        /// Serializes a Packet and sends it via TCP
+        /// </summary>
+        /// <param name="packetToSerialize">The desired packet for serialization</param>
         private void SerializePacket(Packet packetToSerialize)
         {
             MemoryStream msgStream = new MemoryStream();
+            //Serializes the packet and places the data into the msgStream
             mFormatter.Serialize(msgStream, packetToSerialize);
+
+            //Creates a byte array for the packet data
             byte[] buffer = msgStream.GetBuffer();
+
+            //Writes and then sends the data over the network
             mWriter.Write(buffer.Length);
             mWriter.Write(buffer);
             mWriter.Flush();

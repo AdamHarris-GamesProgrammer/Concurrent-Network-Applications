@@ -14,7 +14,6 @@ namespace Packets
         GUID,
         Players,
         Disconnect,
-        Color,
         Velocity
     }
 

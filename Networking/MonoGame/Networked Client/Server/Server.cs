@@ -18,7 +18,8 @@ namespace Server
 
         private UdpClient mUdpListener;
 
-        string latestPlayer;
+        //Holds the latest players name for use in login and uid packets
+        string mLatestPlayer;
 
 
 
@@ -30,29 +31,40 @@ namespace Server
             mUdpListener = new UdpClient(port);
         }
 
+        /// <summary>
+        /// Server start method. 
+        /// </summary>
         public void Start()
         {
+            //Initializes the clients dictionary
             mClients = new ConcurrentDictionary<string, Client>();
 
+            //Starts the TCP listener
             mTcpListener.Start();
 
             while (true)
             {
                 Console.WriteLine("Awaiting Connection");
 
+                //Blocking call, this method does not continue until a socket has been accepted
                 Socket socket = mTcpListener.AcceptSocket();
 
+                //Creates a new client object when a client instance connects to the server
                 Client client = new Client(socket);
 
-                latestPlayer = GenerateUID();
+                //Generates a unique ID for each new player
+                mLatestPlayer = GenerateUID();
 
-                mClients.TryAdd(latestPlayer, client);
+                //Adds the new client to the dictionary using there new UID
+                mClients.TryAdd(mLatestPlayer, client);
 
 
 
                 Console.WriteLine("Accepted Connection");
 
-                Thread tcpThread = new Thread(() => { ClientMethod(latestPlayer); });
+
+                //Starts the tcp and udp thread for each new client
+                Thread tcpThread = new Thread(() => { TCPClientMethod(mLatestPlayer); });
                 Thread udpThread = new Thread(UdpListen);
 
                 tcpThread.Start();
@@ -60,7 +72,10 @@ namespace Server
             }
 
         }
-
+        
+        /// <summary>
+        /// Listens for any packets from the clients that are sent by UDP
+        /// </summary>
         private void UdpListen()
         {
             try
@@ -69,10 +84,13 @@ namespace Server
 
                 while (true)
                 {
+                    //Gets the byte buffer from the received packet
                     byte[] buffer = mUdpListener.Receive(ref endPoint);
 
+                    //Loops through each client and sends the packet
                     foreach (Client c in mClients.Values)
                     {
+                        //Safety check that the clients ip end point has been set
                         if(c.mIpEndPoint != null )
                         {
                             mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
@@ -87,41 +105,53 @@ namespace Server
         }
 
 
-
+        /// <summary>
+        /// This function stops the server from listening for any further packets
+        /// </summary>
         public void Stop()
         {
             mTcpListener.Stop();
             Console.WriteLine("Closed Connection");
         }
 
-        private void ClientMethod(string index)
+        /// <summary>
+        /// Method for handling any TCP packets the server received
+        /// </summary>
+        /// <param name="index"></param>
+        private void TCPClientMethod(string index)
         {
-            Packet recievedPacket;
+            Packet receivedPacket;
 
             Client currentClient = mClients[index];
 
-            while ((recievedPacket = currentClient.TcpRead()) != null)
+            //Continues until the client can no longer read data
+            while ((receivedPacket = currentClient.TcpRead()) != null)
             {
-
-                switch (recievedPacket.mPacketType)
+                //Decides what to do based on the packet type
+                switch (receivedPacket.mPacketType)
                 {
                     case PacketType.Connect:
-                        GUID guidPacket = new GUID(latestPlayer);
+                        //Sends the players Unique ID to the new client
+                        GUID guidPacket = new GUID(mLatestPlayer);
                         currentClient.TcpSend(guidPacket);
                         break;
                     case PacketType.Login:
-                        LoginPacket loginPacket = (LoginPacket)recievedPacket;
+                        //Sets the clients ip end point for processing the packets via UDP
+                        LoginPacket loginPacket = (LoginPacket)receivedPacket;
                         currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
 
+                        //Sends the client list's keys to all clients so they can update it
                         Players playersPacket = new Players(mClients.Keys);
                         TcpSendToAll(playersPacket);
 
-                        NewPlayer newPlayer = new NewPlayer(latestPlayer);
+                        //Sends the new players information to all other clients 
+                        NewPlayer newPlayer = new NewPlayer(mLatestPlayer);
                         TcpSendToOthers(currentClient, newPlayer);
 
                         break;
                     case PacketType.Disconnect:
-                        DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
+                        //Sends a disconnect packet to all clients, this will cause each client to remove the disconnected player
+                        DisconnectPacket disconnectPacket = (DisconnectPacket)receivedPacket;
                         TcpSendToAll(disconnectPacket);
                         mClients.TryRemove(disconnectPacket.mId, out currentClient);
 
@@ -134,16 +164,24 @@ namespace Server
             Console.WriteLine("Closing Connection");
             mClients[index].Close();
 
+            //Temporary cleint object
             Client c;
 
+            //Removes the client from the clients list
             mClients.TryRemove(index, out c);
 
+            //Stops the server if the client count is now 0
             if (mClients.Count == 0)
             {
                 Stop();
             }
         }
 
+        /// <summary>
+        /// Sends a packet over TCP to all clients except the passed in client
+        /// </summary>
+        /// <param name="currentClient"></param>
+        /// <param name="packet"></param>
         private void TcpSendToOthers(Client currentClient, Packet packet)
         {
             foreach (Client cli in mClients.Values)
@@ -156,6 +194,10 @@ namespace Server
             }
         }
 
+        /// <summary>
+        /// Sends a packet via TCP to all clients
+        /// </summary>
+        /// <param name="packet"></param>
         private void TcpSendToAll(Packet packet)
         {
             foreach (Client cli in mClients.Values)
@@ -164,6 +206,10 @@ namespace Server
             }
         }
 
+        /// <summary>
+        /// Generates a Unique ID for each ball
+        /// </summary>
+        /// <returns></returns>
         private string GenerateUID()
         {
             Guid g = Guid.NewGuid();
