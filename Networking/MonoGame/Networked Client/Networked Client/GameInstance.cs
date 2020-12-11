@@ -32,10 +32,10 @@ namespace NetworkedClient
         private string uniqueID;
 
         bool mIsConnected;
-        
+
         Ball player;
         Texture2D ballTexture;
-        
+
         float ballSpeed;
 
         Dictionary<string, Ball> otherPlayers;
@@ -56,17 +56,12 @@ namespace NetworkedClient
             }
         }
 
-        
+
         public void AddPlayer(string uid)
         {
-            Ball newBall = new Ball(uid, Color.White, new Vector2(0,0));
+            Ball newBall = new Ball(uid, Color.White, new Vector2(400, 240));
 
-            if(otherPlayers.TryAdd(uid, newBall))
-            {
-                
-            }
-
-          
+            otherPlayers.TryAdd(uid, newBall);
         }
 
         public void RemovePlayer(string uid)
@@ -105,7 +100,7 @@ namespace NetworkedClient
 
             otherPlayers.TryGetValue(id, out tempBall);
 
-            tempBall.Velocity= velocity;
+            tempBall.Velocity = velocity;
 
             otherPlayers[id] = tempBall;
         }
@@ -125,6 +120,7 @@ namespace NetworkedClient
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
 
+
             // TODO: Add your update logic here
             var kstate = Keyboard.GetState();
 
@@ -138,7 +134,7 @@ namespace NetworkedClient
             else if (kstate.IsKeyDown(Keys.Right)) player.Velocity.X = ballSpeed * deltaTime;
             else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) player.Velocity.X = 0.0f;
 
-            if(tempVelocity != player.Velocity)
+            if (tempVelocity != player.Velocity)
             {
                 tempVelocity = player.Velocity;
                 VelocityPacket velocity = new VelocityPacket(uniqueID, player.Velocity.X, player.Velocity.Y);
@@ -146,7 +142,7 @@ namespace NetworkedClient
             }
 
 
-            foreach(Ball ball in otherPlayers.Values.ToList())
+            foreach (Ball ball in otherPlayers.Values.ToList())
             {
                 MoveBall(ball.Id, ball.Velocity);
             }
@@ -182,8 +178,8 @@ namespace NetworkedClient
             GraphicsDevice.Clear(Color.CornflowerBlue);
 
             _spriteBatch.Begin();
-            
-            foreach(Ball ball in otherPlayers.Values.ToList())
+
+            foreach (Ball ball in otherPlayers.Values.ToList())
             {
                 if (ball.Id == player.Id) continue;
                 _spriteBatch.Draw(ballTexture, ball.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
@@ -242,7 +238,7 @@ namespace NetworkedClient
             DisconnectPacket disconnectPacket = new DisconnectPacket(uniqueID);
             SerializePacket(disconnectPacket);
 
-            
+
         }
 
 
