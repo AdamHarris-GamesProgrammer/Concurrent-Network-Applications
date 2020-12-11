@@ -32,11 +32,9 @@ namespace Packets
     [Serializable]
     public class ConnectPacket : Packet
     {
-        public string mName;
         
-        public ConnectPacket(string name)
+        public ConnectPacket()
         {
-            mName = name;
             mPacketType = PacketType.Connect;
         }
     }
@@ -118,10 +116,12 @@ namespace Packets
     [Serializable]
     public class LoginPacket : Packet
     {
+        public string mId;
         public string mEndPoint;
 
-        public LoginPacket(string endPoint)
+        public LoginPacket(string id, string endPoint)
         {
+            mId = id;
             mEndPoint = endPoint;
             mPacketType = PacketType.Login;
         }

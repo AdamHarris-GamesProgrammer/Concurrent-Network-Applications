@@ -71,26 +71,11 @@ namespace Server
                 {
                     byte[] buffer = mUdpListener.Receive(ref endPoint);
 
-                    MemoryStream stream = new MemoryStream(buffer);
-
-                    BinaryFormatter binaryFormatter = new BinaryFormatter();
-
-                    Packet recievedPackage = binaryFormatter.Deserialize(stream) as Packet;
-
                     foreach (Client c in mClients.Values)
                     {
-                        if (endPoint.ToString() == c.mIpEndPoint.ToString())
+                        if(c.mIpEndPoint != null )
                         {
-                            switch (recievedPackage.mPacketType)
-                            {
-                                case PacketType.Position:
-                                    
-                                    break;
-                                
-                                default:
-                                    break;
-
-                            }
+                            mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
                         }
                     }
                 }
@@ -121,32 +106,18 @@ namespace Server
                 switch (recievedPacket.mPacketType)
                 {
                     case PacketType.Connect:
-
+                        GUID guidPacket = new GUID(latestPlayer);
+                        currentClient.TcpSend(guidPacket);
                         break;
                     case PacketType.Login:
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
                         currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
 
-                        GUID guidPacket = new GUID(latestPlayer);
-                        currentClient.TcpSend(guidPacket);
                         Players playersPacket = new Players(mClients.Keys);
                         TcpSendToAll(playersPacket);
 
                         NewPlayer newPlayer = new NewPlayer(latestPlayer);
                         TcpSendToOthers(currentClient, newPlayer);
-
-                        break;
-
-                    case PacketType.Position:
-                        PositionPacket positionPacket = (PositionPacket)recievedPacket;
-                        Console.WriteLine("Position Packet received from: " + positionPacket.mId);
-                        TcpSendToAll(positionPacket);
-
-                        break;
-                    case PacketType.Velocity:
-                        VelocityPacket velocityPacket = (VelocityPacket)recievedPacket;
-                        Console.WriteLine("Velocity Packet received from: " + velocityPacket.mId);
-                        TcpSendToAll(velocityPacket);
 
                         break;
                     case PacketType.Disconnect:

@@ -38,6 +38,9 @@ namespace NetworkedClient
 
         float ballSpeed;
 
+        float timeSinceLastPositon = float.MaxValue;
+        float positionPacketTimer = 1.0f;
+
         Dictionary<string, Ball> otherPlayers;
 
         public struct Ball
@@ -77,6 +80,8 @@ namespace NetworkedClient
             mTcpClient = new TcpClient();
 
             otherPlayers = new Dictionary<string, Ball>();
+
+            player = new Ball("", Color.White, new Vector2(400, 240));
         }
 
         ~GameInstance()
@@ -99,6 +104,8 @@ namespace NetworkedClient
             Ball tempBall;
 
             otherPlayers.TryGetValue(id, out tempBall);
+
+            MoveBall(id, velocity);
 
             tempBall.Velocity = velocity;
 
@@ -126,6 +133,9 @@ namespace NetworkedClient
 
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            timeSinceLastPositon += deltaTime;
+
+
             if (kstate.IsKeyDown(Keys.Up)) player.Velocity.Y = -ballSpeed * deltaTime;
             else if (kstate.IsKeyDown(Keys.Down)) player.Velocity.Y = ballSpeed * deltaTime;
             else if (kstate.IsKeyUp(Keys.Up) && kstate.IsKeyUp(Keys.Down)) player.Velocity.Y = 0.0f;
@@ -134,17 +144,26 @@ namespace NetworkedClient
             else if (kstate.IsKeyDown(Keys.Right)) player.Velocity.X = ballSpeed * deltaTime;
             else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) player.Velocity.X = 0.0f;
 
+            player.Position += player.Velocity;
+
             if (tempVelocity != player.Velocity)
             {
                 tempVelocity = player.Velocity;
                 VelocityPacket velocity = new VelocityPacket(uniqueID, player.Velocity.X, player.Velocity.Y);
-                SerializePacket(velocity);
+                UdpSendMessage(velocity);
             }
-
 
             foreach (Ball ball in otherPlayers.Values.ToList())
             {
                 MoveBall(ball.Id, ball.Velocity);
+            }
+
+            if (timeSinceLastPositon > positionPacketTimer)
+            {
+                PositionPacket positionPacket = new PositionPacket(uniqueID, player.Position.X, player.Position.Y);
+                UdpSendMessage(positionPacket);
+
+                timeSinceLastPositon = 0.0f;
             }
 
 
@@ -153,24 +172,38 @@ namespace NetworkedClient
 
         private void MoveBall(string uid, Vector2 velocity)
         {
-            Ball tempBall;
+            if (uid != null)
+            {
+                Ball tempBall;
 
-            otherPlayers.TryGetValue(uid, out tempBall);
 
-            tempBall.Position += velocity;
+                otherPlayers.TryGetValue(uid, out tempBall);
 
-            otherPlayers[uid] = tempBall;
+                tempBall.Position += velocity;
+
+                otherPlayers[uid] = tempBall;
+
+            }
         }
 
         private void MoveToPosition(string uid, Vector2 position)
         {
-            Ball tempBall;
+            if(uid == uniqueID)
+            {
+                player.Position = position;
+            }
+            else
+            {
+                Ball tempBall;
 
-            otherPlayers.TryGetValue(uid, out tempBall);
+                otherPlayers.TryGetValue(uid, out tempBall);
 
-            tempBall.Position = position;
+                tempBall.Position = position;
 
-            otherPlayers[uid] = tempBall;
+                otherPlayers[uid] = tempBall;
+            }
+
+
         }
 
         protected override void Draw(GameTime gameTime)
@@ -179,9 +212,16 @@ namespace NetworkedClient
 
             _spriteBatch.Begin();
 
+            //Draw the player
+            _spriteBatch.Draw(ballTexture, player.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
+
             foreach (Ball ball in otherPlayers.Values.ToList())
             {
-                if (ball.Id == player.Id) continue;
+                if (ball.Id == player.Id)
+                {
+                    int a = 4;
+                    continue;
+                }
                 _spriteBatch.Draw(ballTexture, ball.Position, null, Color.White, 0.0f, new Vector2(ballTexture.Width / 2, ballTexture.Height / 2), Vector2.One, SpriteEffects.None, 0.0f);
             }
 
@@ -205,7 +245,8 @@ namespace NetworkedClient
 
                 mIsConnected = true;
 
-
+                ConnectPacket connectPacket = new ConnectPacket();
+                SerializePacket(connectPacket);
 
 
                 return true;
@@ -223,7 +264,7 @@ namespace NetworkedClient
             Thread tcpThread = new Thread(TcpProcessServerResponse);
 
 
-            LoginPacket loginPacket = new LoginPacket(mUdpClient.Client.LocalEndPoint.ToString());
+            LoginPacket loginPacket = new LoginPacket(uniqueID,mUdpClient.Client.LocalEndPoint.ToString());
             SerializePacket(loginPacket);
 
             udpThread.Start();
@@ -267,7 +308,15 @@ namespace NetworkedClient
 
                     switch (recievedPackage.mPacketType)
                     {
-                        case PacketType.Connect:
+                        case PacketType.Velocity:
+                            VelocityPacket velocityPacket = (VelocityPacket)recievedPackage;
+
+                            SetVelocity(velocityPacket.mId, new Vector2(velocityPacket.xVel, velocityPacket.yVal));
+                            break;
+                        case PacketType.Position:
+                            PositionPacket positionPacket = (PositionPacket)recievedPackage;
+
+                            MoveToPosition(positionPacket.mId, new Vector2(positionPacket.xPos, positionPacket.yPos));
                             break;
                         default:
                             break;
@@ -306,16 +355,15 @@ namespace NetworkedClient
 
                             Ball tempPlayer = otherPlayers[uniqueID];
                             PositionPacket position = new PositionPacket(uniqueID, tempPlayer.Position.X, tempPlayer.Position.Y);
-                            SerializePacket(position);
+                            UdpSendMessage(position);
 
                             break;
 
                         case PacketType.Players:
-
-
                             Players players = (Players)recievedPackage;
                             foreach (string id in players.mIds)
                             {
+                                if (id == uniqueID) continue;
                                 AddPlayer(id);
                             }
 
@@ -324,17 +372,11 @@ namespace NetworkedClient
                             GUID guidPacket = (GUID)recievedPackage;
 
                             uniqueID = guidPacket.mId;
-                            break;
-                        case PacketType.Position:
-                            PositionPacket positionPacket = (PositionPacket)recievedPackage;
+                            player.Id = uniqueID;
+                            otherPlayers.Add(uniqueID, player);
 
-                            MoveToPosition(positionPacket.mId, new Vector2(positionPacket.xPos, positionPacket.yPos));
                             break;
-                        case PacketType.Velocity:
-                            VelocityPacket velocityPacket = (VelocityPacket)recievedPackage;
 
-                            SetVelocity(velocityPacket.mId, new Vector2(velocityPacket.xVel, velocityPacket.yVal));
-                            break;
                         case PacketType.Disconnect:
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
                             RemovePlayer(disconnectPacket.mId);
