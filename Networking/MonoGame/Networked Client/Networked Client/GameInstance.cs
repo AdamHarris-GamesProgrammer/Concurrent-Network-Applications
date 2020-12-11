@@ -32,8 +32,6 @@ namespace NetworkedClient
 
         private Vector2 mTempVelocity;
 
-        private string mUniqueID;
-
         bool mIsConnected;
 
         Ball mPlayer;
@@ -129,11 +127,13 @@ namespace NetworkedClient
             //Attempts to get the ball based on the passed in id
             otherPlayers.TryGetValue(id, out tempBall);
 
+            //Sets the velocity
+            tempBall.Velocity = velocity;
+
             //Moves the ball
             MoveBall(id, velocity);
 
-            //Sets the velocity
-            tempBall.Velocity = velocity;
+            
 
             //Sets the player lists instance of the ball to the temp ball object
             otherPlayers[id] = tempBall;
@@ -180,11 +180,6 @@ namespace NetworkedClient
             //If both the left and right arrow keys are up then set the velocity to 0
             else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) mPlayer.Velocity.X = 0.0f;
 
-            if (kstate.IsKeyDown(Keys.D))
-            {
-                int a = 5;
-            }
-
             //Adds the velocity to the players position
             AddVelocity(ref mPlayer, mPlayer.Velocity);
 
@@ -209,7 +204,7 @@ namespace NetworkedClient
             if (mTimeSinceLastPositionPacket > mPositionPacketTimer)
             {
                 //Then serialize and send a position packet over the network via TCP
-                PositionPacket positionPacket = new PositionPacket(mUniqueID, mPlayer.Position.X, mPlayer.Position.Y);
+                PositionPacket positionPacket = new PositionPacket(mPlayer.Id, mPlayer.Position.X, mPlayer.Position.Y);
                 UdpSendMessage(positionPacket);
 
                 //Resets the timer variable
@@ -287,9 +282,9 @@ namespace NetworkedClient
         private void MoveToPosition(string uid, Vector2 position)
         {
             //Checks to see if the unique identifier passed in is the players identifier
-            if (uid == mUniqueID)
+            if (uid == mPlayer.Id)
             {
-                //Sets the players positon
+                //Sets the players position
                 mPlayer.Position = position;
             }
             else
@@ -300,7 +295,7 @@ namespace NetworkedClient
                 //Gets the ball based on the unique ID passed in
                 otherPlayers.TryGetValue(uid, out tempBall);
 
-                //Sets the positon of the temp ball to the passed in position
+                //Sets the position of the temp ball to the passed in position
                 tempBall.Position = position;
 
                 //Sets the players ball position equal to the temp balls position
@@ -391,7 +386,7 @@ namespace NetworkedClient
             Thread tcpThread = new Thread(TcpProcessServerResponse);
 
             //Sends a login packet via TCP
-            LoginPacket loginPacket = new LoginPacket(mUniqueID,mUdpClient.Client.LocalEndPoint.ToString());
+            LoginPacket loginPacket = new LoginPacket(mPlayer.Id, mUdpClient.Client.LocalEndPoint.ToString());
             SerializePacket(loginPacket);
 
             //Starts the UDP and TCP threads
@@ -409,7 +404,7 @@ namespace NetworkedClient
         /// <param name="args"></param>
         protected override void OnExiting(object sender, EventArgs args)
         {
-            DisconnectPacket disconnectPacket = new DisconnectPacket(mUniqueID);
+            DisconnectPacket disconnectPacket = new DisconnectPacket(mPlayer.Id);
             SerializePacket(disconnectPacket);
 
 
@@ -511,18 +506,18 @@ namespace NetworkedClient
                             AddPlayer(newPlayer.mId);
 
                             //Sends this players position to the new player
-                            PositionPacket position = new PositionPacket(mUniqueID, mPlayer.Position.X, mPlayer.Position.Y);
+                            PositionPacket position = new PositionPacket(mPlayer.Id, mPlayer.Position.X, mPlayer.Position.Y);
                             UdpSendMessage(position);
                             break;
 
                         case PacketType.Players:
-                            //Casts the recieved packet to the Players packet
+                            //Casts the received packet to the Players packet
                             Players players = (Players)recievedPacket;
 
                             //Adds each player to the local list
                             foreach (string id in players.mIds)
                             {
-                                if (id == mUniqueID) continue;
+                                if (id == mPlayer.Id) continue;
                                 AddPlayer(id);
                             }
                             break;
@@ -531,10 +526,11 @@ namespace NetworkedClient
                             GUID guidPacket = (GUID)recievedPacket;
 
                             //Sets the unique id for ourself and the player
-                            mUniqueID = guidPacket.mId;
-                            mPlayer.Id = mUniqueID;
+                            mPlayer.Id = guidPacket.mId;
                             //Adds the player to the other players list
-                            otherPlayers.Add(mUniqueID, mPlayer);
+
+                            
+                            otherPlayers.Add(mPlayer.Id, mPlayer);
                             break;
 
                         case PacketType.Disconnect:

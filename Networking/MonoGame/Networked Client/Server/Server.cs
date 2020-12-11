@@ -72,7 +72,7 @@ namespace Server
             }
 
         }
-        
+
         /// <summary>
         /// Listens for any packets from the clients that are sent by UDP
         /// </summary>
@@ -87,11 +87,34 @@ namespace Server
                     //Gets the byte buffer from the received packet
                     byte[] buffer = mUdpListener.Receive(ref endPoint);
 
+                    MemoryStream stream = new MemoryStream(buffer);
+
+                    //Deserializes the stream as a packet for processing
+                    BinaryFormatter formatter = new BinaryFormatter();
+                    Packet recievedPackage = formatter.Deserialize(stream) as Packet;
+
+
+                    switch (recievedPackage.mPacketType)
+                    {
+                        case PacketType.Velocity:
+                            VelocityPacket vp = (VelocityPacket)recievedPackage;
+
+                            Console.WriteLine("Recieved Velocity Package from {0}: X: {1}, Y: {2}", vp.mId, vp.xVel, vp.yVal);
+
+                            break;
+                        case PacketType.Position:
+                            PositionPacket pp = (PositionPacket)recievedPackage;
+
+                            Console.WriteLine("Recieved Position Package from {0}: X: {1}, Y: {2}", pp.mId, pp.xPos, pp.yPos);
+                            break;
+                    }
+
+
                     //Loops through each client and sends the packet
                     foreach (Client c in mClients.Values)
                     {
                         //Safety check that the clients ip end point has been set
-                        if(c.mIpEndPoint != null )
+                        if (c.mIpEndPoint != null)
                         {
                             mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
                         }
