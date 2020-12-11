@@ -130,11 +130,6 @@ namespace NetworkedClient
             //Sets the velocity
             tempBall.Velocity = velocity;
 
-            //Moves the ball
-            MoveBall(id, velocity);
-
-            
-
             //Sets the player lists instance of the ball to the temp ball object
             otherPlayers[id] = tempBall;
         }
@@ -165,7 +160,7 @@ namespace NetworkedClient
             //Short hand for the delta time between frames
             float deltaTime = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
-            //Adds the delta time to the positon timer
+            //Adds the delta time to the position timer
             mTimeSinceLastPositionPacket += deltaTime;
 
             //If the Up or Down arrow is down then set the velocity
@@ -180,8 +175,13 @@ namespace NetworkedClient
             //If both the left and right arrow keys are up then set the velocity to 0
             else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) mPlayer.Velocity.X = 0.0f;
 
+            if (kstate.IsKeyDown(Keys.D))
+            {
+                int a = 3;
+            }
+
             //Adds the velocity to the players position
-            AddVelocity(ref mPlayer, mPlayer.Velocity);
+            AddVelocity(mPlayer.Id, mPlayer.Velocity);
 
             //Ensures a velocity packet is only sent when needed 
             if (mTempVelocity != mPlayer.Velocity)
@@ -218,8 +218,6 @@ namespace NetworkedClient
         /// <summary>
         /// Moves the ball based on the passed in velocity
         /// </summary>
-        /// <param name="uid"></param>
-        /// <param name="velocity"></param>
         private void MoveBall(string uid, Vector2 velocity)
         {
             //Checks the uid is not null 
@@ -232,7 +230,7 @@ namespace NetworkedClient
                 otherPlayers.TryGetValue(uid, out tempBall);
 
                 //Adds the velocity to the balls position
-                AddVelocity(ref tempBall, velocity);
+                AddVelocity(uid, velocity);
 
                 //Sets the lists instance of the ball equal to the temp ball object
                 otherPlayers[uid] = tempBall;
@@ -243,10 +241,13 @@ namespace NetworkedClient
         /// <summary>
         /// This method adds the velocity to the passed in balls position and confines it to screen space
         /// </summary>
-        /// <param name="ball"></param>
-        /// <param name="velocity"></param>
-        private void AddVelocity(ref Ball ball, Vector2 velocity)
+        private void AddVelocity(string id, Vector2 velocity)
         {
+
+            Ball ball;
+
+            otherPlayers.TryGetValue(id, out ball);
+
             //Adds the velocity
             ball.Position += velocity;
 
@@ -272,13 +273,13 @@ namespace NetworkedClient
                 ball.Position.Y = mBallTexture.Height / 2;
             }
 
+
+            otherPlayers[id] = ball;
         }
 
         /// <summary>
         /// Moves a specified ball to a specified position used with the position packet
         /// </summary>
-        /// <param name="uid"></param>
-        /// <param name="position"></param>
         private void MoveToPosition(string uid, Vector2 position)
         {
             //Checks to see if the unique identifier passed in is the players identifier
@@ -306,7 +307,6 @@ namespace NetworkedClient
         /// <summary>
         /// Draws the game to the screen
         /// </summary>
-        /// <param name="gameTime"></param>
         protected override void Draw(GameTime gameTime)
         {
             //Clears the back buffers
@@ -337,9 +337,6 @@ namespace NetworkedClient
         /// <summary>
         /// Allows the client to connect to the server
         /// </summary>
-        /// <param name="ipAddress"></param>
-        /// <param name="port"></param>
-        /// <returns></returns>
         public bool Connect(string ipAddress, int port)
         {
             try
@@ -400,20 +397,15 @@ namespace NetworkedClient
         /// <summary>
         /// OnExiting event called by MonoGame, in this case it is used to call the disconnect packet
         /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="args"></param>
         protected override void OnExiting(object sender, EventArgs args)
         {
             DisconnectPacket disconnectPacket = new DisconnectPacket(mPlayer.Id);
             SerializePacket(disconnectPacket);
-
-
         }
 
         /// <summary>
         /// Sends a packet via UDP
         /// </summary>
-        /// <param name="packet"></param>
         public void UdpSendMessage(Packet packet)
         {
             MemoryStream msgStream = new MemoryStream();
@@ -549,7 +541,6 @@ namespace NetworkedClient
         /// <summary>
         /// Serializes a Packet and sends it via TCP
         /// </summary>
-        /// <param name="packetToSerialize">The desired packet for serialization</param>
         private void SerializePacket(Packet packetToSerialize)
         {
             MemoryStream msgStream = new MemoryStream();
