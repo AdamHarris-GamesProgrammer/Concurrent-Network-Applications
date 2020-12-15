@@ -3,6 +3,7 @@ using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Packets;
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -42,7 +43,7 @@ namespace NetworkedClient
         float mTimeSinceLastPositionPacket = float.MaxValue;
         float mPositionPacketTimer = 1.0f;
 
-        Dictionary<string, Ball> otherPlayers;
+        ConcurrentDictionary<string, Ball> otherPlayers;
 
         public struct Ball
         {
@@ -78,7 +79,8 @@ namespace NetworkedClient
         /// <param name="uid"></param>
         public void RemovePlayer(string uid)
         {
-            otherPlayers.Remove(uid);
+            Ball outBall;
+            otherPlayers.TryRemove(uid, out outBall);
         }
 
         //Constructor for the game class
@@ -91,7 +93,7 @@ namespace NetworkedClient
             //Initializes the TCP client
             mTcpClient = new TcpClient();
 
-            otherPlayers = new Dictionary<string, Ball>();
+            otherPlayers = new ConcurrentDictionary<string, Ball>();
 
             //Initializes the Player object
             mPlayer = new Ball("", Color.White, new Vector2(400, 240));
@@ -516,7 +518,7 @@ namespace NetworkedClient
                             //Adds the player to the other players list
 
                             
-                            otherPlayers.Add(mPlayer.Id, mPlayer);
+                            otherPlayers.TryAdd(mPlayer.Id, mPlayer);
                             break;
 
                         case PacketType.Disconnect:

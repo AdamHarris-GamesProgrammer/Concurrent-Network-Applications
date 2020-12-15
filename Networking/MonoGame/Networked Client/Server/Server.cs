@@ -114,7 +114,7 @@ namespace Server
                     foreach (Client c in mClients.Values)
                     {
                         //Safety check that the clients ip end point has been set
-                        if (c.mIpEndPoint != null)
+                        if (c.mIpEndPoint != null && endPoint != c.mIpEndPoint)
                         {
                             mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
                         }
@@ -187,7 +187,7 @@ namespace Server
             Console.WriteLine("Closing Connection");
             mClients[index].Close();
 
-            //Temporary cleint object
+            //Temporary client object
             Client c;
 
             //Removes the client from the clients list
