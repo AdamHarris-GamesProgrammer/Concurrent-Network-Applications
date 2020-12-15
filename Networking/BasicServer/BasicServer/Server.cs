@@ -194,10 +194,17 @@ namespace BasicServer
                     case PacketType.HangmanLetterGuess:
                         HangmanGuessPacket hangmanGuessPacket = (HangmanGuessPacket)recievedPacket;
 
-                        TcpSendToOthers(currentClient, hangmanGuessPacket);
 
-                        mHangmanInstance.TakeGuess(hangmanGuessPacket.mGuess);
+                        if(mHangmanInstance != null)
+                        {
+                            TcpSendToOthers(currentClient, hangmanGuessPacket);
 
+                            mHangmanInstance.TakeGuess(hangmanGuessPacket.mGuess);
+                            if (mHangmanInstance.GameOver)
+                            {
+                                mHangmanInstance = null;
+                            }
+                        }
 
                         break;
                     default:

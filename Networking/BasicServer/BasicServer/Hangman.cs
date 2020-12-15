@@ -14,8 +14,13 @@ namespace BasicServer
         List<char> mCorrectLetters;
         string[] mWords = { "block", "magnitude", "flu", "topple", "vegetarian", "economics", "glove", "deport", "cupboard", "ratio" };
         string mWord;
+        public bool GameOver
+        {
+            get { return isGameOver; }
+        }
+
+        bool isGameOver = false;
         bool mWon = false;
-        char mPlayAgain = 'n';
 
         public Hangman(Server server)
         {
@@ -39,10 +44,12 @@ namespace BasicServer
             if (mWon)
             {
                 currentState = "Congratulations! You win, the word was: " + mWord;
+                isGameOver = true;
             }
             else if(mLives < 0)
             {
                 currentState = "You lost! Better luck next time, the word was: " + mWord;
+                isGameOver = true;
             }
             else
             {
