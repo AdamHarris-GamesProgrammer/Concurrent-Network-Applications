@@ -36,11 +36,13 @@
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
                     <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
                 </Grid.ColumnDefinitions>
 
                 <Button Content="Change Username" Padding="2" x:Name="UsernameButton" Click="UsernameButton_Click" Grid.Column="0"/>
-                <Button Content="Disconnect" x:Name="DisconnectButton" Padding="2" Click="DisconnectButton_Click" Grid.Column="1"/>
-                <Button Content="Play Hangman" x:Name="HangmanButton" Padding="2" Click="HangmanButton_Click" Grid.Column="2"/>
+                <Button Content="Change Chat Colour" Padding="2" x:Name="MessageColour" Click="MessageColour_Click" Grid.Column="1"/>
+                <Button Content="Disconnect" x:Name="DisconnectButton" Padding="2" Click="DisconnectButton_Click" Grid.Column="2"/>
+                <Button Content="Play Hangman" x:Name="HangmanButton" Padding="2" Click="HangmanButton_Click" Grid.Column="3"/>
             </Grid>
 
             <!-- Message Window Region -->
@@ -54,11 +56,14 @@
                     <TabItem Header="Group Chat">
                         <Border BorderBrush="Black" Grid.Row="1" BorderThickness="1">
                             <ScrollViewer HorizontalScrollBarVisibility="Disabled">
-                                <ListView x:Name="MessageWnd" IsEnabled="False"/>
+                                <ListView x:Name="MessageWnd" IsEnabled="False">
+                                </ListView>
                             </ScrollViewer>
                         </Border>
                     </TabItem>
                 </TabControl>
+
+                
 
                 <Grid Margin="0,3,0,3" Grid.Row="1">
                     <Grid.ColumnDefinitions>

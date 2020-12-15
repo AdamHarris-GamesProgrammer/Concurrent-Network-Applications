@@ -7,6 +7,7 @@ using System.Runtime.Serialization.Formatters.Binary;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading;
+using System.Windows.Media;
 
 namespace UserClient
 {
@@ -20,6 +21,9 @@ namespace UserClient
 
         private UdpClient mUdpClient;
         private TcpClient mTcpClient;
+
+        private SolidColorBrush mServerColor;
+
 
         private RSACryptoServiceProvider mRSAProvider;
         private RSAParameters mPublicKey;
@@ -56,6 +60,8 @@ namespace UserClient
         public Client()
         {
             mTcpClient = new TcpClient();
+
+            mServerColor = Brushes.LightGray;
         }
 
         public bool Connect(string ipAddress, int port)
@@ -225,66 +231,76 @@ namespace UserClient
         {
             int numberOfBytes;
 
-            while (mIsConnected)
+            try
             {
-                if((numberOfBytes = mReader.ReadInt32()) != 0)
+                while (mIsConnected)
                 {
-                    if (!mIsConnected) break;
-
-                    byte[] buffer = mReader.ReadBytes(numberOfBytes);
-
-                    MemoryStream stream = new MemoryStream(buffer);
-
-                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
-
-                    switch (recievedPackage.mPacketType)
+                    if ((numberOfBytes = mReader.ReadInt32()) != 0)
                     {
-                        case PacketType.EncryptedMessage:
-                            EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPackage;
-                            mClientForm.SendNicknameToWindow(DecryptString(encryptedChatMessage.mNickname));
-                            mClientForm.SendMessageToWindow(DecryptString(encryptedChatMessage.mMessage), System.Windows.HorizontalAlignment.Left);
+                        if (!mIsConnected) break;
 
-                            break;
-                        case PacketType.EncryptedPrivateMessage:
-                            EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPackage;
-                            mClientForm.SendNicknameToWindow("PM From " + DecryptString(privateMessagePacket.mSender), System.Windows.HorizontalAlignment.Left);
-                            mClientForm.SendMessageToWindow(DecryptString(privateMessagePacket.mMessage), System.Windows.HorizontalAlignment.Left);
+                        byte[] buffer = mReader.ReadBytes(numberOfBytes);
 
-                            break;
+                        MemoryStream stream = new MemoryStream(buffer);
 
-                        case PacketType.Disconnect:
-                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
-                            mClientForm.DisconnectMessage(disconnectPacket.mNickname);
-                            break;
-                        case PacketType.NicknameWindow:
-                            NicknameWindowPacket nicknameWindowPacket = (NicknameWindowPacket)recievedPackage;
-                            
-                            string[] names = nicknameWindowPacket.mNames.ToArray();
-                            mClientForm.UpdateClientListWindow(names);
-                            break;
-                        case PacketType.Empty:
-                            break;
-                        case PacketType.PlayHangman:
-                            StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPackage;
+                        Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
 
-                            mClientForm.SendMessageToWindow(startHangmanPacket.mStarter + " has started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
-                            PrintHangmanRules();
-                            break;
-                        case PacketType.HangmanInfo:
-                            HangmanInformationPacket hangmanInformationPacket = (HangmanInformationPacket)recievedPackage;
+                        switch (recievedPackage.mPacketType)
+                        {
+                            case PacketType.EncryptedMessage:
+                                EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPackage;
 
-                            mClientForm.SendMessageToWindow(hangmanInformationPacket.mState, System.Windows.HorizontalAlignment.Center);
-                            break;
-                        case PacketType.HangmanLetterGuess:
-                            HangmanGuessPacket guessPacket = (HangmanGuessPacket)recievedPackage;
-                            mClientForm.SendMessageToWindow(guessPacket.mGuesser + " guessed " + guessPacket.mGuess, System.Windows.HorizontalAlignment.Left);
+                                mClientForm.SendNicknameToWindow(DecryptString(encryptedChatMessage.mNickname));
+                                mClientForm.SendMessageToWindow(DecryptString(encryptedChatMessage.mMessage), System.Windows.HorizontalAlignment.Left);
 
-                            break;
-                        default:
-                            break;
+                                break;
+                            case PacketType.EncryptedPrivateMessage:
+                                EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPackage;
+
+                                mClientForm.SendNicknameToWindow("PM From " + DecryptString(privateMessagePacket.mSender), System.Windows.HorizontalAlignment.Left);
+                                mClientForm.SendMessageToWindow(DecryptString(privateMessagePacket.mMessage), System.Windows.HorizontalAlignment.Left);
+
+                                break;
+
+                            case PacketType.Disconnect:
+                                DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
+                                mClientForm.DisconnectMessage(disconnectPacket.mNickname);
+                                break;
+                            case PacketType.NicknameWindow:
+                                NicknameWindowPacket nicknameWindowPacket = (NicknameWindowPacket)recievedPackage;
+
+                                string[] names = nicknameWindowPacket.mNames.ToArray();
+                                mClientForm.UpdateClientListWindow(names);
+                                break;
+                            case PacketType.Empty:
+                                break;
+                            case PacketType.PlayHangman:
+                                StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPackage;
+
+                                mClientForm.SendMessageToWindow(startHangmanPacket.mStarter + " has started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
+                                PrintHangmanRules();
+                                break;
+                            case PacketType.HangmanInfo:
+                                HangmanInformationPacket hangmanInformationPacket = (HangmanInformationPacket)recievedPackage;
+
+                                mClientForm.SendMessageToWindow(hangmanInformationPacket.mState, System.Windows.HorizontalAlignment.Center);
+                                break;
+                            case PacketType.HangmanLetterGuess:
+                                HangmanGuessPacket guessPacket = (HangmanGuessPacket)recievedPackage;
+                                mClientForm.SendMessageToWindow(guessPacket.mGuesser + " guessed " + guessPacket.mGuess, System.Windows.HorizontalAlignment.Left);
+
+                                break;
+                            default:
+                                break;
+                        }
                     }
                 }
             }
+            catch(Exception e)
+            {
+
+            }
+
 
             mReader.Close();
             mWriter.Close();

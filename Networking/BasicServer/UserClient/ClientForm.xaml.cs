@@ -15,9 +15,10 @@ namespace UserClient
         private Client mClient;
         private string mLastNicknameRecieved = "";
 
+        private SolidColorBrush mPersonalColour = Brushes.AliceBlue;
+
         private string mSelectedClient = "";       
 
-        List<TabItem> mMessageWindows;
         public ClientForm(Client client)
         {
             InitializeComponent();
@@ -41,12 +42,16 @@ namespace UserClient
 
                 if (align == HorizontalAlignment.Right)
                 {
-                    item.Background = Brushes.AliceBlue;
+                    item.Background = mPersonalColour;
                 }
                 else
                 {
                     item.Background = Brushes.LightGray;
                 }
+
+
+                item.FontWeight = FontWeights.SemiBold;
+
 
                 item.HorizontalAlignment = align;
 
@@ -194,5 +199,18 @@ namespace UserClient
         {
             mClient.StartGame();
         }
+
+        private void MessageColour_Click(object sender, RoutedEventArgs e)
+        {
+            ChatColour chatColourWindow = new ChatColour(this);
+
+            chatColourWindow.ShowDialog();
+        }
+
+        public void SetBrush(SolidColorBrush mSelectedBrush)
+        {
+            mPersonalColour = mSelectedBrush;
+        }
+
     }
 }
