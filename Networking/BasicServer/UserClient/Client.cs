@@ -43,6 +43,8 @@ namespace UserClient
             }
         }
 
+
+
         private void SetNickname(string name)
         {
                 SetNicknamePacket setNicknamePacket = new SetNicknamePacket(Nickname, name);
@@ -153,20 +155,31 @@ namespace UserClient
 
         public void SendMessage(string message)
         {
-            //Updates local chat window
-            mClientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
-            mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
+            if (message.Contains("-guess"))
+            {
+                //Updates local chat window
+                mClientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
+                mClientForm.SendMessageToWindow(message.ToString(), System.Windows.HorizontalAlignment.Right);
 
-            //Encrypts the nickname and message
-            byte[] encryptedNickname = EncryptString(Nickname);
-            byte[] encryptedMessage =  EncryptString(message);
-            
-            
-            //Send message packet to network
-            EncryptedChatMessage encryptedChatMessage = new EncryptedChatMessage(encryptedNickname, encryptedMessage);
-            SerializePacket(encryptedChatMessage);
+                HangmanGuessPacket hangmanGuessPacket = new HangmanGuessPacket(message[7], Nickname);
+                SerializePacket(hangmanGuessPacket);
+            }
+            else
+            {
+                //Updates local chat window
+                mClientForm.SendNicknameToWindow("You", System.Windows.HorizontalAlignment.Right);
+                mClientForm.SendMessageToWindow(message, System.Windows.HorizontalAlignment.Right);
+
+                //Encrypts the nickname and message
+                byte[] encryptedNickname = EncryptString(Nickname);
+                byte[] encryptedMessage = EncryptString(message);
+
+
+                //Send message packet to network
+                EncryptedChatMessage encryptedChatMessage = new EncryptedChatMessage(encryptedNickname, encryptedMessage);
+                SerializePacket(encryptedChatMessage);
+            }
         }
-
 
         public void SendPrivateMessage(string reciever, string message)
         {
@@ -179,6 +192,14 @@ namespace UserClient
             SerializePacket(privateMessagePacket);
         }
 
+        public void StartGame()
+        {
+            mClientForm.SendMessageToWindow("You have started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
+            PrintHangmanRules();
+
+            StartHangmanPacket startHangmanPacket = new StartHangmanPacket(Nickname);
+            SerializePacket(startHangmanPacket);
+        }
 
         private void SerializePacket(Packet packetToSerialize)
         {
@@ -188,6 +209,16 @@ namespace UserClient
             mWriter.Write(buffer.Length);
             mWriter.Write(buffer);
             mWriter.Flush();
+        }
+
+        private void PrintHangmanRules()
+        {
+            mClientForm.SendMessageToWindow(
+                "The rules are simple.\nYou must guess the word that the computer has generated\n" +
+                "You have six guesses\n" +
+                "To make a guess you must type -guess (followed by your guess)\n" +
+                "Only the first character will be counted\n" +
+                "Best of luck!", System.Windows.HorizontalAlignment.Center);
         }
 
         private void TcpProcessServerResponse()
@@ -232,6 +263,22 @@ namespace UserClient
                             mClientForm.UpdateClientListWindow(names);
                             break;
                         case PacketType.Empty:
+                            break;
+                        case PacketType.PlayHangman:
+                            StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPackage;
+
+                            mClientForm.SendMessageToWindow(startHangmanPacket.mStarter + " has started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
+                            PrintHangmanRules();
+                            break;
+                        case PacketType.HangmanInfo:
+                            HangmanInformationPacket hangmanInformationPacket = (HangmanInformationPacket)recievedPackage;
+
+                            mClientForm.SendMessageToWindow(hangmanInformationPacket.mState, System.Windows.HorizontalAlignment.Center);
+                            break;
+                        case PacketType.HangmanLetterGuess:
+                            HangmanGuessPacket guessPacket = (HangmanGuessPacket)recievedPackage;
+                            mClientForm.SendMessageToWindow(guessPacket.mGuesser + " guessed " + guessPacket.mGuess, System.Windows.HorizontalAlignment.Left);
+
                             break;
                         default:
                             break;

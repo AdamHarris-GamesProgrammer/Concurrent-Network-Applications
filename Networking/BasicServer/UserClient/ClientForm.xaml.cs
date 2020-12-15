@@ -166,12 +166,6 @@ namespace UserClient
             nicknameWindow.ShowDialog();
         }
 
-        //TODO: Implement Connect feature
-        private void ConnectButton_Click(object sender, RoutedEventArgs e)
-        {
-
-        }
-
         private void SetButtonText(string text)
         {
             SubmitButton.Content = text;
@@ -194,6 +188,11 @@ namespace UserClient
             {
                 SendMessage();
             }
+        }
+
+        private void HangmanButton_Click(object sender, RoutedEventArgs e)
+        {
+            mClient.StartGame();
         }
     }
 }

@@ -19,7 +19,7 @@ namespace BasicServer
 
         private UdpClient mUdpListener;
 
-
+        Hangman mHangmanInstance;
 
 
         public Server(string ipAddress, int port)
@@ -109,7 +109,7 @@ namespace BasicServer
             }
         }
 
-        private void TcpSendToAll(Packet packet)
+        public void TcpSendToAll(Packet packet)
         {
             foreach (Client cli in mClients.Values)
             {
@@ -182,6 +182,23 @@ namespace BasicServer
                         LoginPacket loginPacket = (LoginPacket)recievedPacket;
                         currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
                         currentClient.Login(loginPacket.mPublicKey);
+                        break;
+                    case PacketType.PlayHangman:
+                        StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPacket;
+                        TcpSendToOthers(currentClient, startHangmanPacket);
+
+                        mHangmanInstance = new Hangman(this);
+
+                        break;
+
+                    case PacketType.HangmanLetterGuess:
+                        HangmanGuessPacket hangmanGuessPacket = (HangmanGuessPacket)recievedPacket;
+
+                        TcpSendToOthers(currentClient, hangmanGuessPacket);
+
+                        mHangmanInstance.TakeGuess(hangmanGuessPacket.mGuess);
+
+
                         break;
                     default:
                         break;

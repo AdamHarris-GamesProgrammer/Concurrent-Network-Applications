@@ -14,7 +14,10 @@ namespace Packets
         Login,
         EncryptedMessage,
         EncryptedPrivateMessage,
-        EncryptedNickname
+        EncryptedNickname,
+        PlayHangman,
+        HangmanLetterGuess,
+        HangmanInfo
     }
 
     /// <summary>
@@ -141,4 +144,42 @@ namespace Packets
         }
     }
 
+    [Serializable]
+    public class StartHangmanPacket : Packet 
+    {
+        public string mStarter;
+
+        public StartHangmanPacket(string start)
+        {
+            mStarter = start;
+            mPacketType = PacketType.PlayHangman;
+        }
+    }
+
+    [Serializable]
+    public class HangmanGuessPacket : Packet
+    {
+        public char mGuess;
+        public string mGuesser;
+
+        public HangmanGuessPacket(char guess, string guesser)
+        {
+            mGuess = guess;
+            mGuesser = guesser;
+
+            mPacketType = PacketType.HangmanLetterGuess;
+        }
+    }
+
+    [Serializable]
+    public class HangmanInformationPacket : Packet
+    {
+        public string mState;
+
+        public HangmanInformationPacket(string state)
+        {
+            mState = state;
+            mPacketType = PacketType.HangmanInfo;
+        }
+    }
 }

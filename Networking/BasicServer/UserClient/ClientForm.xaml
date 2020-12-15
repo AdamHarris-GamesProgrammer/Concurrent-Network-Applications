@@ -40,7 +40,7 @@
 
                 <Button Content="Change Username" Padding="2" x:Name="UsernameButton" Click="UsernameButton_Click" Grid.Column="0"/>
                 <Button Content="Disconnect" x:Name="DisconnectButton" Padding="2" Click="DisconnectButton_Click" Grid.Column="1"/>
-                <Button Content="Connect" x:Name="ConnectButton" Padding="2" Click="ConnectButton_Click" Grid.Column="2"/>
+                <Button Content="Play Hangman" x:Name="HangmanButton" Padding="2" Click="HangmanButton_Click" Grid.Column="2"/>
             </Grid>
 
             <!-- Message Window Region -->
