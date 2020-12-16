@@ -65,7 +65,6 @@ namespace NetworkedClient
         /// <summary>
         /// Adds a player to the player list
         /// </summary>
-        /// <param name="uid"></param>
         public void AddPlayer(string uid)
         {
             Ball newBall = new Ball(uid, Color.White, new Vector2(400, 240));
@@ -76,7 +75,6 @@ namespace NetworkedClient
         /// <summary>
         /// Removes a player from the player list
         /// </summary>
-        /// <param name="uid"></param>
         public void RemovePlayer(string uid)
         {
             Ball outBall;
@@ -119,8 +117,6 @@ namespace NetworkedClient
         /// <summary>
         /// Sets the velocity of the desired velocity
         /// </summary>
-        /// <param name="id"></param>
-        /// <param name="velocity"></param>
         private void SetVelocity(string id, Vector2 velocity)
         {
             //Temp ball object used for setting the velocity
@@ -128,6 +124,8 @@ namespace NetworkedClient
 
             //Attempts to get the ball based on the passed in id
             otherPlayers.TryGetValue(id, out tempBall);
+
+            tempBall.Id = id;
 
             //Sets the velocity
             tempBall.Velocity = velocity;
@@ -151,7 +149,6 @@ namespace NetworkedClient
         /// <summary>
         /// Update method called during in MonoGames game loop. Used in this case to handle input and move players
         /// </summary>
-        /// <param name="gameTime"></param>
         protected override void Update(GameTime gameTime)
         {
             //Allows the player to close the game window by pressing escape
@@ -291,6 +288,8 @@ namespace NetworkedClient
 
                 //Gets the ball based on the unique ID passed in
                 otherPlayers.TryGetValue(uid, out tempBall);
+
+                tempBall.Id = uid;
 
                 //Sets the position of the temp ball to the passed in position
                 tempBall.Position = position;
@@ -437,6 +436,12 @@ namespace NetworkedClient
                     {
                         case PacketType.Velocity:
                             VelocityPacket velocityPacket = (VelocityPacket)recievedPacket;
+
+
+                            if(velocityPacket.mId != mPlayer.Id)
+                            {
+                                int a = 5;
+                            }
 
                             //Sets the velocity of the referred player to the passed in velocity
                             SetVelocity(velocityPacket.mId, new Vector2(velocityPacket.xVel, velocityPacket.yVal));

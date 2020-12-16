@@ -21,8 +21,6 @@ namespace Server
         //Holds the latest players name for use in login and uid packets
         string mLatestPlayer;
 
-
-
         public Server(string ipAddress, int port)
         {
             IPAddress ip = IPAddress.Parse(ipAddress);
@@ -59,7 +57,6 @@ namespace Server
                 mClients.TryAdd(mLatestPlayer, client);
 
 
-
                 Console.WriteLine("Accepted Connection");
 
 
@@ -93,7 +90,6 @@ namespace Server
                     BinaryFormatter formatter = new BinaryFormatter();
                     Packet recievedPackage = formatter.Deserialize(stream) as Packet;
 
-
                     switch (recievedPackage.mPacketType)
                     {
                         case PacketType.Velocity:
@@ -108,7 +104,6 @@ namespace Server
                             Console.WriteLine("Recieved Position Package from {0}: X: {1}, Y: {2}", pp.mId, pp.xPos, pp.yPos);
                             break;
                     }
-
 
                     //Loops through each client and sends the packet
                     foreach (Client c in mClients.Values)
@@ -127,7 +122,6 @@ namespace Server
             }
         }
 
-
         /// <summary>
         /// This function stops the server from listening for any further packets
         /// </summary>
@@ -140,7 +134,6 @@ namespace Server
         /// <summary>
         /// Method for handling any TCP packets the server received
         /// </summary>
-        /// <param name="index"></param>
         private void TCPClientMethod(string index)
         {
             Packet receivedPacket;
@@ -203,8 +196,6 @@ namespace Server
         /// <summary>
         /// Sends a packet over TCP to all clients except the passed in client
         /// </summary>
-        /// <param name="currentClient"></param>
-        /// <param name="packet"></param>
         private void TcpSendToOthers(Client currentClient, Packet packet)
         {
             foreach (Client cli in mClients.Values)
@@ -220,7 +211,6 @@ namespace Server
         /// <summary>
         /// Sends a packet via TCP to all clients
         /// </summary>
-        /// <param name="packet"></param>
         private void TcpSendToAll(Packet packet)
         {
             foreach (Client cli in mClients.Values)
@@ -232,7 +222,6 @@ namespace Server
         /// <summary>
         /// Generates a Unique ID for each ball
         /// </summary>
-        /// <returns></returns>
         private string GenerateUID()
         {
             Guid g = Guid.NewGuid();
