@@ -72,37 +72,53 @@ namespace BasicServer
 
         public Packet TcpRead()
         {
-            lock (mReadLock)
+            try
             {
-                int result = mReader.ReadInt32();
-                if (result != -1)
+                lock (mReadLock)
                 {
-                    byte[] buffer = mReader.ReadBytes(result);
+                    int result = mReader.ReadInt32();
+                    if (result != -1)
+                    {
+                        byte[] buffer = mReader.ReadBytes(result);
 
-                    MemoryStream stream = new MemoryStream(buffer);
+                        MemoryStream stream = new MemoryStream(buffer);
 
-                    return mFormatter.Deserialize(stream) as Packet;
-                }
-                else
-                {
-                    return null;
+                        return mFormatter.Deserialize(stream) as Packet;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
             }
+            catch(Exception e)
+            {
+                return null;
+            }
+
         }
 
         public void TcpSend(Packet message)
         {
-            lock (mWriteLock)
+            try
             {
-                MemoryStream stream = new MemoryStream();
-                mFormatter.Serialize(stream, message);
+                lock (mWriteLock)
+                {
+                    MemoryStream stream = new MemoryStream();
+                    mFormatter.Serialize(stream, message);
 
-                byte[] bufffer = stream.GetBuffer();
+                    byte[] bufffer = stream.GetBuffer();
 
-                mWriter.Write(bufffer.Length);
-                mWriter.Write(bufffer);
-                mWriter.Flush();
+                    mWriter.Write(bufffer.Length);
+                    mWriter.Write(bufffer);
+                    mWriter.Flush();
+                }
             }
+            catch(Exception e)
+            {
+
+            }
+
         }
         private byte[] Encrypt(byte[] data)
         {

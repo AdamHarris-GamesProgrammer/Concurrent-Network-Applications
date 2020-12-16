@@ -153,6 +153,8 @@ namespace UserClient
 
             InputField.Text = "";
 
+            mSelectedClient = "";
+
             if (mLastNicknameRecieved != "You" && mLastNicknameRecieved != "You -> " + mSelectedClient) mLastNicknameRecieved = "";
         }
 

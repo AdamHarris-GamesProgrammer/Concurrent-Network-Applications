@@ -138,91 +138,102 @@ namespace BasicServer
             Packet recievedPacket;
 
             Client currentClient = mClients[index];
-
-            while ((recievedPacket = currentClient.TcpRead()) != null)
+            try
             {
-
-                switch (recievedPacket.mPacketType)
+                while ((recievedPacket = currentClient.TcpRead()) != null)
                 {
-                    case PacketType.Disconnect:
-                        DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
-                        TcpSendToOthers(currentClient, disconnectPacket);
-                        break;
-                    case PacketType.NewNickname:
-                        SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedPacket;
 
-                        List<string> names = new List<string>();
+                    switch (recievedPacket.mPacketType)
+                    {
+                        case PacketType.Disconnect:
+                            DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
+                            TcpSendToOthers(currentClient, disconnectPacket);
+                            break;
+                        case PacketType.NewNickname:
+                            SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedPacket;
 
-                        foreach (Client cli in mClients.Values)
-                        {
-                            if (cli.Nickname == setNicknamePacket.mOldNickname)
+                            List<string> names = new List<string>();
+
+                            foreach (Client cli in mClients.Values)
                             {
-                                cli.Nickname = setNicknamePacket.mNewNickname;
+                                if (cli.Nickname == setNicknamePacket.mOldNickname)
+                                {
+                                    cli.Nickname = setNicknamePacket.mNewNickname;
+                                }
+
+                                names.Add(cli.Nickname);
                             }
 
-                            names.Add(cli.Nickname);
-                        }
+                            UpdateClientList(names);
 
-                        UpdateClientList(names);
+                            break;
+                        case PacketType.EncryptedPrivateMessage:
+                            EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPacket;
+                            TcpSendToSelected(privateMessagePacket);
 
-                        break;
-                    case PacketType.EncryptedPrivateMessage:
-                        EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPacket;
-                        TcpSendToSelected(privateMessagePacket);
+                            break;
+                        case PacketType.Empty:
+                            break;
 
-                        break;
-                    case PacketType.Empty:
-                        break;
+                        case PacketType.EncryptedMessage:
+                            EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPacket;
+                            TcpSendToOthers(currentClient, encryptedChatMessage);
+                            break;
+                        case PacketType.Login:
+                            LoginPacket loginPacket = (LoginPacket)recievedPacket;
+                            currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
+                            currentClient.Login(loginPacket.mPublicKey);
+                            break;
+                        case PacketType.PlayHangman:
+                            StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPacket;
+                            TcpSendToOthers(currentClient, startHangmanPacket);
 
-                    case PacketType.EncryptedMessage:
-                        EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPacket;
-                        TcpSendToOthers(currentClient, encryptedChatMessage);
-                        break;
-                    case PacketType.Login:
-                        LoginPacket loginPacket = (LoginPacket)recievedPacket;
-                        currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
-                        currentClient.Login(loginPacket.mPublicKey);
-                        break;
-                    case PacketType.PlayHangman:
-                        StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPacket;
-                        TcpSendToOthers(currentClient, startHangmanPacket);
+                            mHangmanInstance = new Hangman(this);
 
-                        mHangmanInstance = new Hangman(this);
+                            break;
 
-                        break;
-
-                    case PacketType.HangmanLetterGuess:
-                        HangmanGuessPacket hangmanGuessPacket = (HangmanGuessPacket)recievedPacket;
+                        case PacketType.HangmanLetterGuess:
+                            HangmanGuessPacket hangmanGuessPacket = (HangmanGuessPacket)recievedPacket;
 
 
-                        if(mHangmanInstance != null)
-                        {
-                            TcpSendToOthers(currentClient, hangmanGuessPacket);
-
-                            mHangmanInstance.TakeGuess(hangmanGuessPacket.mGuess);
-                            if (mHangmanInstance.GameOver)
+                            if (mHangmanInstance != null)
                             {
-                                mHangmanInstance = null;
-                            }
-                        }
+                                TcpSendToOthers(currentClient, hangmanGuessPacket);
 
-                        break;
-                    default:
-                        break;
+                                mHangmanInstance.TakeGuess(hangmanGuessPacket.mGuess);
+                                if (mHangmanInstance.GameOver)
+                                {
+                                    mHangmanInstance = null;
+                                }
+                            }
+
+                            break;
+                        default:
+                            break;
+                    }
                 }
             }
-
-            Console.WriteLine("Closing Connection");
-            mClients[index].Close();
-
-            Client c;
-
-            mClients.TryRemove(index, out c);
-
-            if (mClients.Count == 0)
+            catch(Exception e)
             {
-                Stop();
+
             }
+            finally
+            {
+                Console.WriteLine("Closing Connection");
+                mClients[index].Close();
+
+                Client c;
+
+                mClients.TryRemove(index, out c);
+
+                if (mClients.Count == 0)
+                {
+                    Stop();
+                }
+            }
+            
+
+
         }
 
         private void UpdateClientList(List<string> names)
