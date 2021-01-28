@@ -19,11 +19,10 @@ namespace BasicServer
         private BinaryWriter mWriter;
         private BinaryFormatter mFormatter;
 
-        private RSACryptoServiceProvider mRSAProvider;
-        private RSAParameters mPublicKey;
-        private RSAParameters mPrivateKey;
-        private RSAParameters mClientKey;
-        private RSAParameters mServerKey;
+        public int Index
+        {
+            get; set;
+        }
 
         private object mReadLock;
         private object mWriteLock;
@@ -37,7 +36,7 @@ namespace BasicServer
 
         public IPEndPoint mIpEndPoint;
 
-        public Client(Socket socket)
+        public Client(Socket socket, int index)
         {
             mReadLock = new object();
             mWriteLock = new object();
@@ -49,11 +48,7 @@ namespace BasicServer
             mFormatter = new BinaryFormatter();
 
             Nickname = "Username";
-
-            mRSAProvider = new RSACryptoServiceProvider(1024);
-            mPublicKey = mRSAProvider.ExportParameters(false);
-            mPrivateKey = mRSAProvider.ExportParameters(true);
-
+            Index = index;
         }
 
         public void Close()
@@ -63,11 +58,6 @@ namespace BasicServer
             mReader.Close();
             mWriter.Close();
             mSocket.Close();
-        }
-
-        public void Login(RSAParameters clientKey)
-        {
-            mPublicKey = clientKey;
         }
 
         public Packet TcpRead()
@@ -120,36 +110,6 @@ namespace BasicServer
             }
 
         }
-        private byte[] Encrypt(byte[] data)
-        {
-            lock (mRSAProvider)
-            {
-                mRSAProvider.ImportParameters(mServerKey);
-                //mRSAProvider.ImportParameters(mClientKey);
 
-                return mRSAProvider.Encrypt(data, true);
-            }
-        }
-
-        private byte[] Decrypt(byte[] data)
-        {
-            lock (mRSAProvider)
-            {
-                mRSAProvider.ImportParameters(mPrivateKey);
-                //mRSAProvider.ImportParameters(mClientKey);
-
-                return mRSAProvider.Decrypt(data, true);
-            }
-        }
-
-        private byte[] EncryptString(string message)
-        {
-            return Encoding.UTF8.GetBytes(message);
-        }
-
-        private string DecryptString(byte[] message)
-        {
-            return Encoding.UTF8.GetString(message);
-        }
     }
 }

@@ -176,11 +176,6 @@ namespace NetworkedClient
             //If both the left and right arrow keys are up then set the velocity to 0
             else if (kstate.IsKeyUp(Keys.Left) && kstate.IsKeyUp(Keys.Right)) mPlayer.Velocity.X = 0.0f;
 
-            if (kstate.IsKeyDown(Keys.D))
-            {
-                int a = 3;
-            }
-
             //Adds the velocity to the players position
             AddVelocity(ref mPlayer, mPlayer.Velocity);
 

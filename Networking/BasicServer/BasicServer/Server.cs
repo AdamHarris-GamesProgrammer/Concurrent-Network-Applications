@@ -17,8 +17,6 @@ namespace BasicServer
 
         private ConcurrentDictionary<int, Client> mClients;
 
-        private UdpClient mUdpListener;
-
         Hangman mHangmanInstance;
 
 
@@ -26,8 +24,6 @@ namespace BasicServer
         {
             IPAddress ip = IPAddress.Parse(ipAddress);
             mTcpListener = new TcpListener(ip, port);
-
-            mUdpListener = new UdpClient(port);
         }
 
         public void Start()
@@ -47,7 +43,7 @@ namespace BasicServer
 
                 Socket socket = mTcpListener.AcceptSocket();
 
-                Client client = new Client(socket);
+                Client client = new Client(socket, index);
 
                 mClients.TryAdd(index, client);
 
@@ -56,47 +52,19 @@ namespace BasicServer
                 Console.WriteLine("Accepted Connection");
 
                 Thread tcpThread = new Thread(() => { ClientMethod(index); });
-                Thread udpThread = new Thread(UdpListen);
 
                 tcpThread.Start();
-                udpThread.Start();
             }
 
         }
 
-        private void UdpListen()
-        {
-            try
-            {
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-
-                while (true)
-                {
-                    byte[] buffer = mUdpListener.Receive(ref endPoint);
-
-                    foreach(Client c in mClients.Values)
-                    {
-                        if(endPoint.ToString() != c.mIpEndPoint.ToString())
-                        {
-                            mUdpListener.Send(buffer, buffer.Length, c.mIpEndPoint);
-                        }
-                        
-                    }
-                }
-            }
-            catch (SocketException e)
-            {
-                Console.WriteLine("Client UDP Read Method Exception: " + e.Message);
-            }
-        }
-
-
+        //Stops the server
         public void Stop()
         {
             mTcpListener.Stop();
             Console.WriteLine("Closed Connection");
         }
-
+        //sends a packet to all clients except the passed in one
         private void TcpSendToOthers(Client currentClient, Packet packet)
         {
             foreach (Client cli in mClients.Values)
@@ -108,7 +76,7 @@ namespace BasicServer
                 }
             }
         }
-
+        //sends a packet to all clients
         public void TcpSendToAll(Packet packet)
         {
             foreach (Client cli in mClients.Values)
@@ -116,8 +84,8 @@ namespace BasicServer
                 cli.TcpSend(packet);
             }
         }
-
-        private void TcpSendToSelected(Packet packet)
+        //Sends a private message packet to the reciever
+        private void TcpSendPrivatePacket(Packet packet)
         {
             EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)packet;
 
@@ -146,14 +114,36 @@ namespace BasicServer
                     switch (recievedPacket.mPacketType)
                     {
                         case PacketType.Disconnect:
+                            //Sends the disconnect message to other clients 
                             DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPacket;
                             TcpSendToOthers(currentClient, disconnectPacket);
+
+                            List<string> clientNames = new List<string>();
+
+                            //Updates the clients old nickname to there new one
+                            foreach (Client cli in mClients.Values)
+                            {
+                                if (cli.Nickname == disconnectPacket.mNickname)
+                                {
+                                    Client cliendToRemove;
+
+                                    mClients.TryRemove(cli.Index, out cliendToRemove);
+
+                                    continue;
+                                }
+
+                                clientNames.Add(cli.Nickname);
+                            }
+
+                            //Updates client list
+                            UpdateClientList(clientNames);
                             break;
                         case PacketType.NewNickname:
                             SetNicknamePacket setNicknamePacket = (SetNicknamePacket)recievedPacket;
 
                             List<string> names = new List<string>();
 
+                            //Updates the clients old nickname to there new one
                             foreach (Client cli in mClients.Values)
                             {
                                 if (cli.Nickname == setNicknamePacket.mOldNickname)
@@ -164,45 +154,48 @@ namespace BasicServer
                                 names.Add(cli.Nickname);
                             }
 
+                            //Updates client list
                             UpdateClientList(names);
 
                             break;
                         case PacketType.EncryptedPrivateMessage:
+                            //Sends the private message to its reciever
                             EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPacket;
-                            TcpSendToSelected(privateMessagePacket);
+                            TcpSendPrivatePacket(privateMessagePacket);
 
                             break;
                         case PacketType.Empty:
                             break;
-
                         case PacketType.EncryptedMessage:
+                            //Sends the chat message to other clients
                             EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPacket;
                             TcpSendToOthers(currentClient, encryptedChatMessage);
                             break;
-                        case PacketType.Login:
-                            LoginPacket loginPacket = (LoginPacket)recievedPacket;
-                            currentClient.mIpEndPoint = IPEndPoint.Parse(loginPacket.mEndPoint);
-                            currentClient.Login(loginPacket.mPublicKey);
-                            break;
                         case PacketType.PlayHangman:
                             StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPacket;
+                            //Send the packet to other clients
                             TcpSendToOthers(currentClient, startHangmanPacket);
 
+                            //Create a new hangman instance
                             mHangmanInstance = new Hangman(this);
 
                             break;
 
+
                         case PacketType.HangmanLetterGuess:
                             HangmanGuessPacket hangmanGuessPacket = (HangmanGuessPacket)recievedPacket;
 
-
+                            //Safety check
                             if (mHangmanInstance != null)
                             {
+                                //Sends the guess to other clients
                                 TcpSendToOthers(currentClient, hangmanGuessPacket);
 
+                                //Passes the guess to the hangman object
                                 mHangmanInstance.TakeGuess(hangmanGuessPacket.mGuess);
                                 if (mHangmanInstance.GameOver)
                                 {
+                                    //if the game is now over set hangman instance to null
                                     mHangmanInstance = null;
                                 }
                             }
@@ -219,11 +212,13 @@ namespace BasicServer
             }
             finally
             {
+                //Closes connection
                 Console.WriteLine("Closing Connection");
                 mClients[index].Close();
 
                 Client c;
 
+                //Removes the client
                 mClients.TryRemove(index, out c);
 
                 if (mClients.Count == 0)
@@ -236,6 +231,7 @@ namespace BasicServer
 
         }
 
+        //This function sorts the names list alphabetically and then sends the new client list to all clients
         private void UpdateClientList(List<string> names)
         {
             names.Sort();

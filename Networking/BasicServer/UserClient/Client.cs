@@ -19,16 +19,9 @@ namespace UserClient
         private BinaryFormatter mFormatter;
         private ClientForm mClientForm;
 
-        private UdpClient mUdpClient;
         private TcpClient mTcpClient;
 
-        private SolidColorBrush mServerColor;
-
-
-        private RSACryptoServiceProvider mRSAProvider;
         private RSAParameters mPublicKey;
-        private RSAParameters mPrivateKey;
-        private RSAParameters mServerKey;
 
         bool mIsConnected = false;
 
@@ -60,8 +53,6 @@ namespace UserClient
         public Client()
         {
             mTcpClient = new TcpClient();
-
-            mServerColor = Brushes.LightGray;
         }
 
         public bool Connect(string ipAddress, int port)
@@ -73,9 +64,6 @@ namespace UserClient
                 mWriter = new BinaryWriter(mStream, Encoding.UTF8);
                 mReader = new BinaryReader(mStream, Encoding.UTF8);
                 mFormatter = new BinaryFormatter();
-
-                mUdpClient = new UdpClient();
-                mUdpClient.Connect(ipAddress, port);
 
                 mIsConnected = true;
 
@@ -93,16 +81,12 @@ namespace UserClient
             mClientForm = new ClientForm(this);
 
             Thread tcpThread = new Thread(TcpProcessServerResponse);
-            Thread udpThread = new Thread(UdpProcessServerResponse);
 
 
             mClientForm.SetWindowTitle(Nickname);
 
 
-            Login();
-
             tcpThread.Start();
-            udpThread.Start();
 
 
             mClientForm.ShowDialog();
@@ -111,43 +95,7 @@ namespace UserClient
             DisconnectFromServer();
         }
 
-        public void Login()
-        {
-            LoginPacket loginPacket = new LoginPacket(mUdpClient.Client.LocalEndPoint.ToString(), mPublicKey);
-            SerializePacket(loginPacket);
-
-        }
-
-        public void UdpSendMessage(Packet packet)
-        {
-            MemoryStream msgStream = new MemoryStream();
-            mFormatter.Serialize(msgStream, packet);
-            byte[] buffer = msgStream.GetBuffer();
-            mUdpClient.Send(buffer, buffer.Length);
-        }
-
-        public void UdpProcessServerResponse()
-        {
-            try
-            {
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-
-                while (true)
-                {
-                    byte[] buffer = mUdpClient.Receive(ref endPoint);
-
-                    MemoryStream stream = new MemoryStream(buffer);
-
-                    Packet recievedPackage = mFormatter.Deserialize(stream) as Packet;
-                }
-            }
-            catch(SocketException e)
-            {
-                Console.WriteLine("Client UDP Read Method Exception: " + e.Message);
-            }
-        }
-
-
+        //Disconnects you from the server
         public void DisconnectFromServer()
         {
             if (!mIsConnected) return;
@@ -187,6 +135,7 @@ namespace UserClient
             }
         }
 
+
         public void SendPrivateMessage(string reciever, string message)
         {
             //Updates local chat window
@@ -198,15 +147,9 @@ namespace UserClient
             SerializePacket(privateMessagePacket);
         }
 
-        public void StartGame()
-        {
-            mClientForm.SendMessageToWindow("You have started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
-            PrintHangmanRules();
 
-            StartHangmanPacket startHangmanPacket = new StartHangmanPacket(Nickname);
-            SerializePacket(startHangmanPacket);
-        }
 
+        //Serializes a packet and sends it over TCP
         private void SerializePacket(Packet packetToSerialize)
         {
             MemoryStream msgStream = new MemoryStream();
@@ -217,8 +160,19 @@ namespace UserClient
             mWriter.Flush();
         }
 
+        //Starts a game of hangman
+        public void StartGame()
+        {
+            mClientForm.SendMessageToWindow("You have started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
+            PrintHangmanRules();
+
+            StartHangmanPacket startHangmanPacket = new StartHangmanPacket(Nickname);
+            SerializePacket(startHangmanPacket);
+        }
+
         private void PrintHangmanRules()
         {
+            //Prints out the hangman game rules
             mClientForm.SendMessageToWindow(
                 "The rules are simple.\nYou must guess the word that the computer has generated\n" +
                 "You have six guesses\n" +
@@ -248,6 +202,7 @@ namespace UserClient
                         switch (recievedPackage.mPacketType)
                         {
                             case PacketType.EncryptedMessage:
+                                //Sends a message to the window 
                                 EncryptedChatMessage encryptedChatMessage = (EncryptedChatMessage)recievedPackage;
 
                                 mClientForm.SendNicknameToWindow(DecryptString(encryptedChatMessage.mNickname));
@@ -255,18 +210,21 @@ namespace UserClient
 
                                 break;
                             case PacketType.EncryptedPrivateMessage:
+                                //Sends a private message to the window
                                 EncryptedPrivateMessagePacket privateMessagePacket = (EncryptedPrivateMessagePacket)recievedPackage;
 
                                 mClientForm.SendNicknameToWindow("PM From " + DecryptString(privateMessagePacket.mSender), System.Windows.HorizontalAlignment.Left);
                                 mClientForm.SendMessageToWindow(DecryptString(privateMessagePacket.mMessage), System.Windows.HorizontalAlignment.Left);
 
                                 break;
-
                             case PacketType.Disconnect:
+                                //Sends a disconnected message to the window
                                 DisconnectPacket disconnectPacket = (DisconnectPacket)recievedPackage;
                                 mClientForm.DisconnectMessage(disconnectPacket.mNickname);
+
                                 break;
                             case PacketType.NicknameWindow:
+                                //Updates the client list
                                 NicknameWindowPacket nicknameWindowPacket = (NicknameWindowPacket)recievedPackage;
 
                                 string[] names = nicknameWindowPacket.mNames.ToArray();
@@ -275,17 +233,20 @@ namespace UserClient
                             case PacketType.Empty:
                                 break;
                             case PacketType.PlayHangman:
+                                //Prints the hangman rules to the window 
                                 StartHangmanPacket startHangmanPacket = (StartHangmanPacket)recievedPackage;
 
                                 mClientForm.SendMessageToWindow(startHangmanPacket.mStarter + " has started a game of Hangman!", System.Windows.HorizontalAlignment.Center);
                                 PrintHangmanRules();
                                 break;
                             case PacketType.HangmanInfo:
+                                //Sends the hitman info to the window
                                 HangmanInformationPacket hangmanInformationPacket = (HangmanInformationPacket)recievedPackage;
 
                                 mClientForm.SendMessageToWindow(hangmanInformationPacket.mState, System.Windows.HorizontalAlignment.Center);
                                 break;
                             case PacketType.HangmanLetterGuess:
+                                //Sends the guesser and there guess to the chat window
                                 HangmanGuessPacket guessPacket = (HangmanGuessPacket)recievedPackage;
                                 mClientForm.SendMessageToWindow(guessPacket.mGuesser + " guessed " + guessPacket.mGuess, System.Windows.HorizontalAlignment.Left);
 
@@ -307,34 +268,13 @@ namespace UserClient
             mTcpClient.Close();
         }
 
-
-        private byte[] Encrypt(byte[] data)
-        {
-            lock (mRSAProvider)
-            {
-                mRSAProvider.ImportParameters(mServerKey);
-                //mRSAProvider.ImportParameters(mClientKey);
-
-                return mRSAProvider.Encrypt(data, true);
-            }
-        }
-
-        private byte[] Decrypt(byte[] data)
-        {
-            lock (mRSAProvider)
-            {
-                mRSAProvider.ImportParameters(mPrivateKey);
-                //mRSAProvider.ImportParameters(mClientKey);
-
-                return mRSAProvider.Decrypt(data, true);
-            }
-        }
-
+        //Encrypts the passed in string
         private byte[] EncryptString(string message)
         {
             return Encoding.UTF8.GetBytes(message);
         }
 
+        //Decrypts the passed in string
         private string DecryptString(byte[] message)
         {
             return Encoding.UTF8.GetString(message);

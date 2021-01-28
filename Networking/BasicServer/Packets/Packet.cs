@@ -11,7 +11,6 @@ namespace Packets
         NewNickname,
         Disconnect,
         NicknameWindow,
-        Login,
         EncryptedMessage,
         EncryptedPrivateMessage,
         EncryptedNickname,
@@ -93,22 +92,6 @@ namespace Packets
         {
             mNames = new List<string>(names);
             mPacketType = PacketType.NicknameWindow;
-        }
-    }
-
-    [Serializable]
-    public class LoginPacket : Packet
-    {
-        public string mEndPoint;
-
-        [NonSerialized]
-        public RSAParameters mPublicKey;
-        
-        public LoginPacket(string endPoint, RSAParameters key)
-        {
-            mEndPoint = endPoint;
-            mPublicKey = key;
-            mPacketType = PacketType.Login;
         }
     }
 
